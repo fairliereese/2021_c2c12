@@ -32,6 +32,11 @@ get_long_clust_colors <- function() {
     return(colors)
 }
 
+get_short_clust_colors <- function() {
+    cluster_cols_darker = c("#67A51F","#e72b8a","#7570b3","#d96002","#1e9e77","#a7761d","#e6ab02")
+    return(cluster_cols_darker)
+}
+
 plot_clust_prop <- function(seurat_obj, gb, colors, opref) {
     clusters = unique(seurat_obj$leiden)
     clusters = clusters[order(clusters)]
@@ -53,7 +58,7 @@ plot_clust_prop <- function(seurat_obj, gb, colors, opref) {
     ylab('Fraction')
     
     fname = paste('figures/gene', gb, 'cluster_props.pdf', sep='_')
-    pdf(fname, width=.75*7, height=2.75*5)
+    pdf(fname, width=3.2, height=4.5)
     print(p)
     dev.off()
     
@@ -81,7 +86,7 @@ plot_short_clust_prop <- function(seurat_obj, gb, colors, opref) {
     ylab('Fraction')
     
     fname = paste('figures/gene', gb, 'short_cluster_props.pdf', sep='_')
-    pdf(fname, width=.75*7, height=2.75*5)
+    pdf(fname, width=3.2, height=4.5)
     print(p)
     dev.off()
     
