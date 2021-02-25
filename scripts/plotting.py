@@ -21,12 +21,22 @@ def get_priming_colors():
     
     return c_dict, order
 
-def get_sample_colors():
+def get_sample_colors(samples=None):
     sample_green = '#019f73'
     sample_blue = '#57b4e9'
     sample_pink = '#cb79a7'
-    c_dict = {'MB_cells': sample_pink, 'MB_nuclei': sample_blue}
-    order = ['MB_cells', 'MB_nuclei']
+    c_dict = {'MB_cells': sample_pink, 'MB_nuclei': sample_blue, 'MT_nuclei': sample_green}
+    order = ['MB_cells', 'MB_nuclei', 'MT_nuclei']
+    
+    if samples:
+        keys = c_dict.keys()
+        pop_list = []
+        for key in keys:
+            if key not in samples:
+                pop_list.append(key)
+        for p in pop_list:
+            del c_dict[p]
+        order = [o for o in order if o in samples]            
     
     return c_dict, order
 
@@ -182,3 +192,32 @@ def plot_transcript_novelty(df, oprefix, c_dict, order, \
     
     plt.show()
     plt.clf()
+    
+def plot_short_long_det(df, c_dict, order, opref, \
+                    xlim, ylim, how='gene'):
+    
+    sns.set_context('paper', font_scale=2)
+    
+    if how == 'gene':
+        c1 = 'n_genes'
+        c2 = 'ill_gene_count'
+    elif how == 'read':
+        c1 = 'n_counts'
+        c2 = 'ill_umi_count'
+        
+    ax = sns.jointplot(data=df, x=c1, y=c2,
+                     hue='sample', palette=c_dict,
+                     xlim=(0,xlim), ylim=(0,ylim), 
+                     joint_kws={'data':df, 's':40, 'alpha':1})
+    ax = ax.ax_joint
+    ax.legend(title='')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.get_legend().remove()
+
+    if how == 'gene':
+        _ = ax.set(xlabel='# genes/cell in PacBio', ylabel='# genes/cell detected in Illumina')
+        plt.savefig('{}_genes_detected_pb_v_illumina.pdf'.format(opref), dpi=300, bbox_inches='tight')
+    elif how == 'read':
+        _ = ax.set(xlabel='# reads/cell in PacBio', ylabel='# UMIs/cell in Illumina')
+    plt.savefig('{}_reads_detected_pb_v_illumina.pdf'.format(opref), dpi=300, bbox_inches='tight')
