@@ -38,8 +38,7 @@ def get_illumina_metadata(fname):
     # melt df to duplicate entries b/w dt and randhex primers for each cell
     id_vars = ['sample', 'ill_umi_count', 'ill_gene_count',\
                'bc', 'bc3', 'bc2', 'bc1', 'well']
-    value_vars = ['bc1_dt', 'bc1_randhex']
-    print('beep')
+    value_vars = ['Poly dT', 'Random hexamer']
 
     temp = pd.melt(df, id_vars=id_vars, value_vars=value_vars)
     temp.rename({'variable': 'primer_type', 'value': 'raw_bc1', 'bc': \
@@ -56,6 +55,32 @@ def find_randhex_polydt_datasets(df, bc_df):
     randhex_datasets = df.loc[df.bc1.isin(randhex_bc1s), 'dataset'].tolist()
     
     return dt_datasets, randhex_datasets
+
+def add_read_annot_metadata(df, bulk=False):
+    fname = '/Users/fairliereese/Documents/programming/mortazavi_lab/data/c2c12_paper_2020/sc_pacbio/illumina_cell_metadata_full_bcs.tsv'
+    i_df = get_illumina_metadata(fname)
+#     i_df = i_df[['raw_bc', 'primer_type']]
+    df = df.merge(i_df, how='left', left_on='dataset', right_on='raw_bc')
+    
+    if bulk:
+        sample_df = df['dataset'].to_frame()
+        sample_df.drop_duplicates(inplace=True)
+        
+        mini_idf = i_df[['raw_bc', 'sample']]
+        
+        sample_df['experiment'] = sample_df.apply(lambda x: 'bulk' if 'PB' in x.dataset else 'sc', axis=1)
+        sample_df = sample_df.merge(mini_idf, how='left', left_on='dataset', right_on='raw_bc')
+        sample_df.loc[sample_df.dataset.isin(['PB154', 'PB155']), 'sample'] = 'MB'
+        sample_df.loc[sample_df.dataset.isin(['PB213', 'PB214']), 'sample'] = 'MT'
+        sample_df['tech'] = 'temp'
+        sample_df.loc[sample_df['sample'].str.contains('nuclei'), 'tech'] = 'Single-nucleus'
+        sample_df.loc[sample_df['sample'].str.contains('cells'), 'tech'] = 'Single-cell'
+        sample_df.loc[sample_df.experiment == 'bulk', 'tech'] = 'Bulk'
+        sample_df.drop(['sample', 'raw_bc'], axis=1, inplace=True)
+        
+        df = df.merge(sample_df, how='left', on='dataset')
+    
+    return df
 
 def add_bcs_df(df):
     df['bc3'] = df.dataset.str.slice(start=0, stop=8)

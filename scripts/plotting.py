@@ -21,6 +21,63 @@ def get_priming_colors():
     
     return c_dict, order
 
+def get_sample_colors():
+    sample_green = '#019f73'
+    sample_blue = '#57b4e9'
+    sample_pink = '#cb79a7'
+    c_dict = {'MB_cells': sample_pink, 'MB_nuclei': sample_blue}
+    order = ['MB_cells', 'MB_nuclei']
+    
+    return c_dict, order
+
+def get_tech_colors():
+    sample_green = '#019f73'
+    sample_blue = '#57b4e9'
+    sample_pink = '#cb79a7'
+    c_dict = {'Bulk': '#EBC046', \
+                       'Single-cell': sample_pink,
+                       'Single-nucleus': sample_blue}
+    order = ['Bulk', 'Single-cell', 'Single-nucleus']
+    
+    return c_dict, order
+
+def plot_read_len_kde(df, hue, c_dict, order, opref, common_norm=True):
+    sns.set_context('paper', font_scale=2)    
+    
+    ax = sns.displot(data=df, x='read_length', hue=hue,
+                 palette=c_dict, kind='kde', hue_order=order, linewidth=3, 
+                 common_norm=common_norm)
+    ax.set(xlabel='Read length', ylabel='KDE of reads',
+          title='Length distribution of Reads')
+    plt.savefig('{}_read_length_kde.pdf'.format(opref), dpi=300, bbox_inches='tight')
+    
+# plot proportion of reads per nov. cat per cell
+# when grouped by another var
+def plot_reads_per_cell_nov(df, hue, c_dict, order, opref):
+    sns.set_context('paper', font_scale=2)    
+    
+    _, nov_order = get_talon_nov_colors()
+    
+    # groupby
+    temp = df[['dataset', hue, 'transcript_novelty', 'read_name']].groupby(['dataset', hue, 'transcript_novelty']).count()
+    temp.reset_index(inplace=True)
+    temp.rename({'read_name':'counts'}, axis=1, inplace=True)
+    
+    # calculate proportion nov. cat per cell
+    total_temp = df[['read_name', 'dataset']].groupby('dataset').count()
+    total_temp.reset_index(inplace=True)
+    total_temp.rename({'read_name':'counts'}, axis=1, inplace=True)
+
+    temp['Proportion of reads'] = temp.apply(lambda x: x.counts/total_temp.loc[total_temp.dataset==x.dataset, 'counts'].tolist()[0], axis=1)
+    
+    g = sns.boxplot(data=temp, x='transcript_novelty', y='Proportion of reads', hue=hue,
+                hue_order=order, order=nov_order, saturation=1, palette=c_dict)
+    g.set_xticklabels(g.get_xticklabels(),rotation=90)
+    g.spines['right'].set_visible(False)
+    g.spines['top'].set_visible(False)
+    g.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.savefig('{}_transcript_nov_box.pdf'.format(opref), dpi=300, bbox_inches='tight')
+
 def add_perc(ax, data, feature):
     total = data[feature].sum()
     ylim = ax.get_ylim()[1]
@@ -30,8 +87,10 @@ def add_perc(ax, data, feature):
         y = p.get_y() + p.get_height() + ylim*0.00625
         ax.annotate(percentage, (x, y), size = 12)
         
-def plot_read_novelty(df, oprefix, c_dict, order, \
-                      ylim=None, title=None, datasets='all', save_type='png'):
+def plot_read_novelty(df, opref, c_dict, order,
+                      ylim=None, title=None, 
+                      datasets='all'):
+    sns.set_context("paper", font_scale=1.6)
     
     temp = df.copy(deep=True)
     
@@ -67,14 +126,8 @@ def plot_read_novelty(df, oprefix, c_dict, order, \
         g.fig.suptitle('{} reads per novelty category'.format(title))
         
     # save figure
-    fname = '{}_read_novelty'.format(oprefix)
-    if save_type == 'png':
-        g.savefig(fname+'.png', dpi=300)        
-    elif save_type == 'pdf':
-        g.savefig(fname+'.pdf', dpi=300)        
-    
-    plt.show()
-    plt.clf()
+    fname = '{}_read_novelty'.format(opref)
+    g.savefig(fname+'.pdf', dpi=300)
     
 def plot_transcript_novelty(df, oprefix, c_dict, order, \
                             ylim=None, title=None,
