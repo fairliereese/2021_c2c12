@@ -1,5 +1,9 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+from matplotlib_venn import venn2
+import upsetplot
+from .utils import *
 
 def get_talon_nov_colors():
     c_dict = {'Known': '#009E73',
@@ -221,3 +225,180 @@ def plot_short_long_det(df, c_dict, order, opref, \
     elif how == 'read':
         _ = ax.set(xlabel='# reads/cell in PacBio', ylabel='# UMIs/cell in Illumina')
     plt.savefig('{}_reads_detected_pb_v_illumina.pdf'.format(opref), dpi=300, bbox_inches='tight')
+    
+    
+def plot_detection_venn(bulk, sc, opref, \
+                        gene_nov='Known', \
+                        transcript_nov=None, \
+                        sample='MB', cell_part='cell'):
+    
+    sns.set_context('paper', font_scale=1.8)
+    
+    # colors
+    known_out_green = '#90D6C3'
+    known_int_green = '#009E73'
+    nnc_out_gold = '#F5DFAE'
+    nnc_int_gold = '#E69F00'
+    nic_out_orange = '#DEA67A'
+    nic_int_orange = '#D55E00'
+    mt_green = '#019f73'
+    mb_pink = '#cb79a7'
+    mb_blue = '#57b4e9'
+    
+    sc_datasets = get_dataset_names(sc)
+    bulk_datasets = get_dataset_names(bulk)
+    sample_df = get_sample_df(sc_datasets+bulk_datasets)
+    
+    if not gene_nov and not transcript_nov:
+        print('must choose one!')
+        return
+    elif gene_nov:
+        bulk = bulk.loc[bulk.gene_novelty == gene_nov]
+        sc = sc.loc[sc.gene_novelty == gene_nov]
+        id_col = 'annot_gene_id'
+        out_color = known_out_green
+        int_color = known_int_green
+        
+    elif transcript_nov:
+        bulk = bulk.loc[bulk.transcript_novelty == transcript_nov]
+        sc = sc.loc[sc.transcript_novelty == transcript_nov]
+        id_col = 'annot_transcript_id'
+        
+        if transcript_nov == 'Known':
+            out_color = known_out_green
+            int_color = known_int_green
+        elif transcript_nov == 'NNC':
+            out_color = nnc_out_gold
+            int_color = nnc_int_gold
+        elif transcript_nov == 'NIC':
+            out_color = nic_out_orange
+            int_color = nic_int_orange
+        
+    # which genes/transcripts are in MB vs. MT?
+    if sample == 'MB' and cell_part == 'cell':
+        bulk_sample = 'MB'
+        sc_sample = 'MB_cells'
+        celltype_color = mb_pink
+    elif sample == 'MB' and cell_part == 'nucleus':
+        bulk_sample = 'MB'
+        sc_sample = 'MB_nuclei'
+        celltype_color = mb_blue
+    elif sample == 'MT' and cell_part == 'nucleus':
+        bulk_sample = 'MT'
+        sc_sample = 'MT_nuclei'
+        celltype_color = mt_green
+    else:
+        print('No cell myotubes in dataset')
+        return
+        
+    bulk_datasets = sample_df.loc[(sample_df['sample'] == bulk_sample)&(sample_df.experiment == 'bulk'), 'dataset'].tolist()
+    sc_datasets = sample_df.loc[(sample_df['sample'] == sc_sample)&(sample_df.experiment == 'sc'), 'dataset'].tolist()
+    
+    # filter abundance files based on which datasets we care about 
+    bulk = bulk.loc[bulk[bulk_datasets].any(axis=1)]
+    sc = sc.loc[sc[sc_datasets].any(axis=1)]
+    
+    # get list of unique gene or transcript ids from bulk/sc
+    bulk_ids = bulk[id_col].unique().tolist()
+    sc_ids = sc[id_col].unique().tolist()
+    
+    # intersection
+    intersection = list(set(bulk_ids) & set(sc_ids))
+    n_bulk_sc = len(intersection)
+    n_bulk = len(bulk_ids) - n_bulk_sc
+    n_sc = len(sc_ids) - n_bulk_sc
+    counts = [n_bulk, n_sc, n_bulk_sc]
+    log_counts = [np.log2(n) for n in counts]
+    log_counts = tuple(counts)
+    
+    v = venn2(subsets=log_counts, set_labels=('',''))
+    v.get_patch_by_id('10').set_color(out_color)
+    v.get_patch_by_id('01').set_color(out_color)
+    v.get_patch_by_id('11').set_color(int_color)
+    v.get_patch_by_id('10').set_edgecolor(celltype_color)
+    v.get_patch_by_id('01').set_edgecolor(celltype_color)
+    v.get_patch_by_id('11').set_edgecolor(celltype_color)
+    v.get_patch_by_id('10').set_linewidth(5)
+    v.get_patch_by_id('01').set_linewidth(5)
+    v.get_patch_by_id('11').set_linewidth(5)
+    v.get_patch_by_id('10').set_alpha(1)
+    v.get_patch_by_id('01').set_alpha(1)
+    v.get_patch_by_id('11').set_alpha(1)
+    v.get_label_by_id('10').set_text(counts[0])
+    v.get_label_by_id('01').set_text(counts[1])
+    v.get_label_by_id('11').set_text(counts[2])
+    
+    # save da ting
+    fname = '{}'.format(opref)
+    fname += '_{}_{}'.format(sample, cell_part)
+    if gene_nov:
+        fname += '_{}_genes'.format(gene_nov)
+    if transcript_nov:
+        fname += '_{}_transcripts'.format(transcript_nov)
+    fname += '_venn.pdf'
+    plt.savefig(fname, dpi=300, bbox_inches='tight') 
+
+def plot_upset_plot(bulk, sc, opref, gtf=None, \
+                    kind='gene', novelty='Known'):
+    
+    sns.set_context('paper', font_scale=1)    
+    
+    sc_datasets = get_dataset_names(sc)
+    bulk_datasets = get_dataset_names(bulk)
+    sample_df = get_sample_df(sc_datasets+bulk_datasets)
+
+    # colors
+    known_green = '#009E73'
+    nnc_gold = '#E69F00'
+    nic_orange = '#D55E00'
+    
+    if novelty == 'Known':
+        color = known_green
+    elif novelty == 'NNC':
+        color = nnc_gold
+    elif novelty == 'NIC':
+        color = nic_orange
+
+    # df is table with counts, df_copy is df right before groupby and counting
+    if novelty != 'Known':
+        gtf = None
+    df, df_copy = make_counts_table(bulk, sc, sample_df, gtf, kind=kind, novelty=novelty)
+    
+    # what column?
+    if kind == 'gene':
+        id_col = 'annot_gene_id'
+        len_col = 'Gene length'
+        df_copy.rename({'len': len_col}, axis=1, inplace=True)  
+    elif kind == 'transcript':
+        id_col = 'annot_transcript_id'
+        len_col = 'Transcript length'
+        df_copy.rename({'len': len_col}, axis=1, inplace=True)
+    if novelty == 'Known':
+        nov = 'known'
+    elif novelty == 'NNC':
+        nov = 'NNC'
+    elif novelty == 'NIC':
+        nov = 'NIC'
+        
+    ylab = 'Number of {} {}s'.format(nov, kind)
+          
+    # plot de plot
+    blot = upsetplot.UpSet(df_copy, subset_size='auto', show_counts='%d', sort_by='cardinality')
+    
+    if novelty == 'Known':
+        blot.add_catplot(value=len_col, kind='box', color=color, fliersize=1, linewidth=1)
+        
+    ax_dict = blot.plot()
+    ax_dict['intersections'].set_ylabel(ylab)
+    
+    if novelty == 'Known':
+#         ax_dict['extra1'].set_ylim((-10000,200000))
+        ax_dict['extra1'].set_yscale('log')
+
+#         blot.plot()
+
+    f = plt.gcf()
+    fname = '{}_{}_{}_detection_upset.pdf'.format(opref, novelty, kind)
+    f.savefig(fname, dpi=300, bbox_inches='tight')  
+        
+    return(df, df_copy)

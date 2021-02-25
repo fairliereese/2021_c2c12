@@ -16,7 +16,9 @@ def get_bc1_matches():
 
 	return bc_df
 
-def get_illumina_metadata(fname):
+def get_illumina_metadata():
+    
+    fname = '/Users/fairliereese/Documents/programming/mortazavi_lab/data/c2c12_paper_2020/sc_pacbio/illumina_cell_metadata_full_bcs.tsv'
     
     # we want info about primer type as well
     bc_df = get_bc1_matches()
@@ -56,26 +58,36 @@ def find_randhex_polydt_datasets(df, bc_df):
     
     return dt_datasets, randhex_datasets
 
+def get_sample_df(datasets):
+    
+    
+    sample_df = pd.DataFrame(data=datasets, columns=['dataset'])
+    sample_df.drop_duplicates(inplace=True)
+        
+    i_df = get_illumina_metadata()
+    mini_idf = i_df[['raw_bc', 'sample']]    
+    sample_df['experiment'] = sample_df.apply(lambda x: 'bulk' if 'PB' in x.dataset else 'sc', axis=1)
+    
+    
+    sample_df = sample_df.merge(mini_idf, how='left', left_on='dataset', right_on='raw_bc')
+    
+    sample_df.loc[sample_df.dataset.isin(['PB154', 'PB155']), 'sample'] = 'MB'
+    sample_df.loc[sample_df.dataset.isin(['PB213', 'PB214']), 'sample'] = 'MT'
+    
+    sample_df['tech'] = 'temp'
+    sample_df.loc[sample_df['sample'].str.contains('nuclei'), 'tech'] = 'Single-nucleus'
+    sample_df.loc[sample_df['sample'].str.contains('cells'), 'tech'] = 'Single-cell'
+    sample_df.loc[sample_df.experiment == 'bulk', 'tech'] = 'Bulk'
+    
+    return sample_df
+    
 def add_read_annot_metadata(df, bulk=False):
-    fname = '/Users/fairliereese/Documents/programming/mortazavi_lab/data/c2c12_paper_2020/sc_pacbio/illumina_cell_metadata_full_bcs.tsv'
-    i_df = get_illumina_metadata(fname)
-#     i_df = i_df[['raw_bc', 'primer_type']]
+    i_df = get_illumina_metadata()
     df = df.merge(i_df, how='left', left_on='dataset', right_on='raw_bc')
     
     if bulk:
-        sample_df = df['dataset'].to_frame()
-        sample_df.drop_duplicates(inplace=True)
-        
-        mini_idf = i_df[['raw_bc', 'sample']]
-        
-        sample_df['experiment'] = sample_df.apply(lambda x: 'bulk' if 'PB' in x.dataset else 'sc', axis=1)
-        sample_df = sample_df.merge(mini_idf, how='left', left_on='dataset', right_on='raw_bc')
-        sample_df.loc[sample_df.dataset.isin(['PB154', 'PB155']), 'sample'] = 'MB'
-        sample_df.loc[sample_df.dataset.isin(['PB213', 'PB214']), 'sample'] = 'MT'
-        sample_df['tech'] = 'temp'
-        sample_df.loc[sample_df['sample'].str.contains('nuclei'), 'tech'] = 'Single-nucleus'
-        sample_df.loc[sample_df['sample'].str.contains('cells'), 'tech'] = 'Single-cell'
-        sample_df.loc[sample_df.experiment == 'bulk', 'tech'] = 'Bulk'
+        datasets = df.dataset.unique().tolist()
+        sample_df = get_sample_df(datasets)
         sample_df.drop(['sample', 'raw_bc'], axis=1, inplace=True)
         
         df = df.merge(sample_df, how='left', on='dataset')
@@ -94,3 +106,132 @@ def read_whitelist(fname):
     df = pd.read_csv(fname, header=None, names=['gid', 'tid'])
     whitelist = df.tid.tolist()
     return whitelist
+
+# from a talon abundance file, get a list of columns that correspond to the datasets
+def get_dataset_names(df):
+    non_dataset_columns = ['gene_ID', 'transcript_ID', 'annot_gene_id',
+                       'annot_transcript_id', 'annot_gene_name',
+                       'annot_transcript_name', 'n_exons', 'length',
+                       'gene_novelty', 'transcript_novelty', 'ISM_subtype', 'experiment']
+    dataset_cols = [ x for x in list(df.columns) \
+                        if x not in non_dataset_columns ]
+    return dataset_cols
+
+def get_gtf_info(fname, kind='gene'):
+    
+    df = pd.read_csv(fname, sep='\t', comment='#', usecols=[0,2,3,4,8], header=None)
+    df.columns = ['chr', 'entry_type', 'start', 'stop', 'fields']
+    if kind == 'gene':
+        df = df.loc[df.entry_type == 'gene']
+        
+        name_pat = 'gene_name "'
+        id_pat = 'gene_id "'
+        
+        df['gene_type'] = df.fields.str.split(pat='gene_type "', n=1, expand=True)[1]
+        df['gene_type'] = df.gene_type.str.split(pat='"', n=1, expand=True)[0]
+        
+    elif kind == 'transcript':
+        df = df.loc[df.entry_type == 'transcript']
+        
+        name_pat = 'transcript_name "'
+        id_pat = 'transcript_id "'
+    
+    else:
+        raise ValueError('Only genes or transcript u dumb')
+        
+    df['name'] = df.fields.str.split(pat=name_pat, n=1, expand=True)[1]
+    df['name'] = df.name.str.split(pat='"', n=1, expand=True)[0]
+
+    df['id'] = df.fields.str.split(pat=id_pat, n=1, expand=True)[1]
+    df['id'] = df.id.str.split(pat='"', n=1, expand=True)[0]
+
+    df['len'] = df.start - df.stop
+    df['len'] = df.len.abs()
+    
+    df.drop('fields', axis=1, inplace=True)
+        
+    return df    
+
+def make_counts_table(bulk, sc, sample_df, \
+                      gtf, kind='gene', novelty='Known'):
+
+    # generate merged T/F table
+    df = group_table(bulk, sc, sample_df, kind=kind)
+    
+    # subset on novelty
+    if kind == 'gene':
+        nov_col = 'gene_novelty'
+    elif kind == 'transcript':
+        nov_col = 'transcript_novelty'
+    df = df.loc[df[nov_col] == novelty]
+    df_copy = df.copy(deep=True)
+    
+    # count T/F occurrences on the different dataset categories
+    if kind == 'gene':
+        id_col = 'annot_gene_id'
+    elif kind == 'transcript':
+        id_col = 'annot_transcript_id'
+        
+    # groupby and count the bois
+    df = df[['Bulk MB', 'Bulk MT', 'sc MB', 'sn MB', 'sn MT', id_col]].groupby(['Bulk MB', 'Bulk MT', 'sc MB', 'sn MB', 'sn MT']).count()
+    
+    # add annot info
+    if novelty == 'Known' and gtf:
+        if kind == 'gene':
+            gtf_annot = get_gtf_info(gtf, kind='gene')
+        elif kind == 'transcript':
+            gtf_annot = get_gtf_info(gtf, kind='transcript')
+        df_copy = df_copy.merge(gtf_annot, how='left', left_on=id_col, right_on='id')
+        
+    df_copy.set_index(['Bulk MB', 'Bulk MT', 'sc MB', 'sn MB', 'sn MT'], inplace=True)
+        
+    return df, df_copy
+
+def group_table(bulk, sc, sample_df, kind='gene'):
+        
+    # what columns do we need?
+    bulk_datasets = sample_df.loc[sample_df.experiment=='bulk', 'dataset'].tolist()
+    sc_datasets = sample_df.loc[sample_df.experiment=='sc', 'dataset'].tolist()
+    cols = []
+    cols = ['annot_gene_id', 'annot_transcript_id', 'gene_novelty', 'transcript_novelty']
+    bulk_cols = cols+bulk_datasets
+    sc_cols = cols+sc_datasets
+        
+    # subset on cols we need
+    bulk = bulk[bulk_cols]
+    sc = sc[sc_cols]
+
+    # merge columns to get datasets all in one df
+    df = bulk.merge(sc, how='outer', on=cols)
+    df.fillna(value=0, inplace=True)
+
+    # if gene, groupby on gene id and sum counts
+    if kind == 'gene':
+        cols = ['annot_gene_id', 'gene_novelty']
+        agg_dict = {}
+        for d in bulk_datasets+sc_datasets:
+            agg_dict[d] = 'sum'
+        df = df.groupby(cols).agg(agg_dict).reset_index()
+    
+    # get a dict of dataset ids to category
+    dataset_dict = {}
+    dataset_dict['Bulk MB'] = sample_df.loc[(sample_df.experiment=='bulk')&(sample_df['sample']=='MB'), 'dataset'].tolist()
+    dataset_dict['Bulk MT'] = sample_df.loc[(sample_df.experiment=='bulk')&(sample_df['sample']=='MT'), 'dataset'].tolist()
+    dataset_dict['sc MB'] = sample_df.loc[(sample_df.experiment=='sc')&(sample_df['sample']=='MB_cells'), 'dataset'].tolist()
+    dataset_dict['sn MB'] = sample_df.loc[(sample_df.experiment=='sc')&(sample_df['sample']=='MB_nuclei'), 'dataset'].tolist()
+    dataset_dict['sn MT'] = sample_df.loc[(sample_df.experiment=='sc')&(sample_df['sample']=='MT_nuclei'), 'dataset'].tolist()
+
+    # add T/F columns to denote presence/absence of gene/transcript for each dataset group
+    for key in dataset_dict:
+        datasets = dataset_dict[key]
+        df[key] = df[datasets].any(axis=1)
+
+    # reduce to just the columns we care about
+    if kind == 'gene':
+        cols = ['annot_gene_id', 'gene_novelty']
+    elif kind == 'transcript':
+        cols = ['annot_transcript_id', 'transcript_novelty']
+    cols = cols+[k for k in dataset_dict]
+    df = df[cols]
+    
+    return df
