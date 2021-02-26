@@ -529,3 +529,20 @@ def plot_len_boxplot(sc, bulk, gtf, opref, novelty='Known', kind='gene'):
     plt.savefig(fname, dpi=300, bbox_inches='tight')  
     
     plt.show()
+    
+def plot_exon_hist(df, opref, xlim=30):
+
+    sns.set_context('paper', font_scale=2)
+    c_dict, order = get_tech_colors()
+    
+    # loop through each technology
+    for t in df.tech.unique():
+        temp = df.loc[df.tech==t]
+        ax = sns.displot(data=temp, x='n_exons', hue='tech',
+                         palette=c_dict, kind='hist',
+                         hue_order=order, discrete=True,
+                         linewidth=0, alpha=1)
+        plt.xlim(0,xlim)
+        ax.set(xlabel='Number of exons', ylabel='Number of reads',
+              title='')
+        plt.savefig('{}_{}_n_exons_bulk_hist.pdf'.format(opref, t), dpi=300, bbox_inches='tight')
