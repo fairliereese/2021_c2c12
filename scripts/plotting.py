@@ -546,3 +546,94 @@ def plot_exon_hist(df, opref, xlim=30):
         ax.set(xlabel='Number of exons', ylabel='Number of reads',
               title='')
         plt.savefig('{}_{}_n_exons_bulk_hist.pdf'.format(opref, t), dpi=300, bbox_inches='tight')
+        
+def plot_umis_v_barcodes(df, opref):	
+    sns.set_context("paper", font_scale=1.8)
+    print('hello world')
+    bc_cols = ['bc1', 'bc2', 'bc3', 'state']
+
+    # only want unique bc/umi combos
+    temp = df[bc_cols+['umi']].drop_duplicates()
+
+    # get the number of unique bc/umi combos
+    temp = temp[bc_cols+['umi']].groupby(bc_cols).count()
+    temp.reset_index(inplace=True)
+    temp.rename({'umi':'counts'}, axis=1, inplace=True)
+    temp.sort_values(by=['state', 'counts'], ascending=False, inplace=True)
+    
+    # add x coordinate by count and state
+    temp['x_coord'] = np.nan
+    temp.loc[temp.state == 'Pre-correction', 'x_coord'] = range(len(temp.loc[temp.state=='Pre-correction'].index))
+    temp.loc[temp.state == 'Post-correction', 'x_coord'] = range(len(temp.loc[temp.state=='Post-correction'].index))
+
+    # plot
+    ax = sns.lineplot(data=temp, x='x_coord', y='counts',
+                      hue='state', linewidth=3)
+    ax = plt.gca()
+    ax.set_xscale('log')
+    ax.set_xlabel('Ranked cells by # UMIs (logscale)')
+    ax.set_ylabel('# UMIs (logscale)')
+
+    plt.tight_layout()
+    
+    ax.legend(title='')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    
+    fname = '{}_umis_v_barcodes.pdf'.format(opref)
+    plt.savefig(fname, dpi=300)
+                
+def plot_umis_per_cell(df, opref):	   
+    bc_cols = ['bc1', 'bc2', 'bc3', 'state']
+
+    # get the number of reads per barcode
+    temp1 = df[bc_cols+['umi']].groupby(bc_cols).count()
+    temp1.reset_index(inplace=True)
+    temp1.rename({'umi':'reads'}, axis=1, inplace=True)
+    temp1.sort_values(by='reads', ascending=False, inplace=True)
+
+    # get the number of unique umis per barcode
+    temp2 = df[bc_cols+['umi']].drop_duplicates()
+    temp2 = temp2[bc_cols+['umi']].groupby(bc_cols).count()
+    temp2.reset_index(inplace=True)
+    temp2.rename({'umi':'umis'}, axis=1, inplace=True)
+    temp2.sort_values(by='umis', ascending=False, inplace=True)
+
+    # merge on barcode
+    temp = temp1.merge(temp2, on=bc_cols)
+
+    bins = [i for i in range(0, temp.reads.max(), 1000)]
+    temp_reads = temp.reads.values.tolist()
+    temp_bins = np.digitize(temp_reads, bins)
+    temp['bin'] = temp_bins
+
+    bins.append(temp.reads.max())
+    bin_dict = dict([(bin, bin_num) for bin, bin_num in zip([i for i in range(1,len(bins))], bins)])
+    temp['bin_total'] = temp['bin'].map(temp['bin'].value_counts())
+    temp['bin_reads'] = temp.bin.map(bin_dict)
+
+    # groupby the bin and get the median of number of umis
+    temp = temp[['state', 'bin_total', 'bin_reads', 'umis']].groupby(['state', 'bin_total', 'bin_reads']).median()
+    temp.reset_index(inplace=True)
+    temp.rename({'umis': 'median_umis'}, axis=1, inplace=True)
+    temp.sort_values(by='bin_reads', inplace=True)
+    
+    print(temp.head())
+
+    # plot de plot
+    ax = sns.lineplot(x='bin_reads', y='median_umis', alpha=0.5, linewidth=3,
+                      hue='state', marker='o', data=temp)
+    ax.set_ylabel('Median UMIs per Cell')
+    ax.set_xlabel('Sequencing Reads per Cell')
+    
+    ax.legend(title='')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    
+    ax.set_title('')
+    plt.draw()
+
+    plt.tight_layout()
+
+    fname = '{}_median_umis_v_reads.pdf'.format(opref)
+    plt.savefig(fname, dpi=300)
