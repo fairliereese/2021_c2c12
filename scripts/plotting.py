@@ -146,6 +146,7 @@ def plot_read_novelty(df, opref, c_dict, order,
 def plot_transcript_novelty(df, oprefix, c_dict, order, \
                             ylim=None, title=None,
                             whitelist=None, datasets='all', save_type='png'):
+    sns.set_context('paper', font_scale=1.6)
     
     temp = df.copy(deep=True)
     
@@ -402,3 +403,86 @@ def plot_upset_plot(bulk, sc, opref, gtf=None, \
     f.savefig(fname, dpi=300, bbox_inches='tight')  
         
     return(df, df_copy)
+
+def plot_ends_iso_cell(df, tss_df, opref, kind='tss', xlim=None, ylim=None):
+    sns.set_context("paper", font_scale=1.6)
+    
+    i_df = get_illumina_metadata()
+    df = df.merge(i_df, how='left', left_on='dataset', right_on='raw_bc')
+
+    # merge read annot df with ends
+    df = df.merge(tss_df, how='left', left_on='read_name', right_on='read_name')
+
+    # only known transcripts
+    df = df.loc[df.transcript_novelty == 'Known']
+
+    # get isoforms per gene
+    df.rename({"merged_bc":"cell_ID"}, axis=1, inplace=True)
+    ts_id_col = 'peak_id'
+    iso_no_dups = df[["cell_ID","gene_ID","transcript_ID"]].drop_duplicates()
+    n_isoforms = iso_no_dups.groupby(["cell_ID","gene_ID"]).count().reset_index()
+    n_isoforms = n_isoforms.rename(columns = {"transcript_ID":"n_isoforms"})
+    n_isoforms = pd.merge(n_isoforms, df[["gene_ID","annot_gene_name"]].drop_duplicates(),
+                          how = "left")
+
+    # get TSSs/TESs per gene
+    TS_no_dups = df[["cell_ID","gene_ID",ts_id_col]].drop_duplicates()
+    n_TS = TS_no_dups.groupby(["cell_ID","gene_ID"]).count().reset_index()
+    n_TS = n_TS.rename(columns = {ts_id_col:"n_sites"})
+
+    # merge
+    all_data = pd.merge(n_isoforms, n_TS, on = ['gene_ID','cell_ID'], 
+                        how = 'left')
+
+    # count number of isoforms and sites 
+
+    # first remove everything with 0 TSSs
+    df = all_data.loc[all_data.n_sites > 0]
+    parent_df = df.copy(deep=True)
+    df = df[['gene_ID', 'n_isoforms', 'n_sites']].groupby(['n_isoforms', 'n_sites']).count()
+    df.reset_index(inplace=True)
+    df.rename({'gene_ID': 'counts'}, axis=1, inplace=True)
+
+    # log 
+    df['log2counts'] = np.log10(df.counts)
+    
+    if kind == 'tss':
+        color = '#56B4E9'
+        title = 'TSS'
+    elif kind == 'tes':
+        color = '#E69F00'
+        title = 'TES'
+       
+    # jointgrid dotplot
+    g = sns.JointGrid(xlim=(0.25, xlim+0.5), ylim=(0.5, ylim+0.5), marginal_ticks=True)
+    palette = sns.color_palette("dark:"+color, as_cmap=True).reversed()
+    sns.scatterplot(data=df, x='n_isoforms', y='n_sites',\
+                    hue='log2counts', palette=palette,
+                    size='log2counts', sizes=(50,300),\
+                    ax=g.ax_joint)
+
+    sns.histplot(data=parent_df, x='n_isoforms', ax=g.ax_marg_x,\
+                 binwidth=1, discrete=True, color=color, edgecolor=None)
+    sns.histplot(data=parent_df, y='n_sites', ax=g.ax_marg_y,\
+                 binwidth=1, discrete=True, color=color, edgecolor=None)
+
+    g.ax_joint.set_xticks(range(1, xlim+1))
+    g.ax_joint.set_yticks(range(1, ylim+1))
+
+    g.ax_marg_x.set_yscale('log')
+    g.ax_marg_x.set_yticks([1, 100, 10000])
+    g.ax_marg_x.set_ylabel('')
+    g.ax_marg_y.set_xscale('log')
+    g.ax_marg_y.set_xticks([1, 100, 10000])
+    g.ax_marg_y.set_xlabel('')
+
+    plt.setp(g.ax_marg_y.get_xticklabels(), fontsize=12)
+    plt.setp(g.ax_marg_x.get_yticklabels(), fontsize=12)
+
+    g.set_axis_labels('x', 'y', fontsize=16)
+    g.set_axis_labels("Known splice isoforms detected per gene per cell", "{} per gene per cell".format(title))
+    g.ax_joint.legend(bbox_to_anchor=(1.6, 1.035), title='log2(counts)')
+
+    fname = '{}_{}_iso_cell.pdf'.format(opref, kind)
+    plt.savefig(fname, dpi=300, bbox_inches='tight')
+
