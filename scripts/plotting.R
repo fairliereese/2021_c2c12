@@ -16,6 +16,14 @@ get_sample_colors <- function() {
     return(colors)
 }
 
+get_40k_clust_colors <- function() {
+    cluster20_colors = c("#CBD844","#C193C6","#FAD53E","#E28BC3","#D7BF9C",
+                     "#C79693","#66C2A5","#E7C689","#C5B9A7","#9F9BC9",
+                     "#AAD852","#9E9DBA","#9DAE8C","#D49A73","#ECD836",
+                     "#D2A29F","#BABF77","#B3B3B3","#F08F6D","#F1CD64")
+    return(cluster20_colors)
+}
+
 get_long_clust_colors <- function() {
     purple = '#8DA0CB'
     yellow = '#FFD92F'
@@ -27,7 +35,7 @@ get_long_clust_colors <- function() {
     mint = '#b4fade'
 
     long_clusters = list(1, 2, 3, 4, 5, 6, 7)
-    colors = c(teal, purple, yellow, green, beige, salmon, pink)
+    colors = c(yellow, beige, teal, salmon, purple, pink, green)
     
     return(colors)
 }
