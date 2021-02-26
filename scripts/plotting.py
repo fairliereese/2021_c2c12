@@ -229,7 +229,7 @@ def plot_short_long_det(df, c_dict, order, opref, \
     
     
 def plot_detection_venn(bulk, sc, opref, \
-                        gene_nov='Known', \
+                        gene_nov=None, \
                         transcript_nov=None, \
                         sample='MB', cell_part='cell'):
     
