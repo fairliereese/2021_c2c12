@@ -145,7 +145,7 @@ def plot_read_novelty(df, opref, c_dict, order,
     
 def plot_transcript_novelty(df, oprefix, c_dict, order, \
                             ylim=None, title=None,
-                            whitelist=None, datasets='all', save_type='png'):
+                            whitelist=None, datasets='all', save_type='pdf'):
     sns.set_context('paper', font_scale=1.6)
     
     temp = df.copy(deep=True)
@@ -486,3 +486,46 @@ def plot_ends_iso_cell(df, tss_df, opref, kind='tss', xlim=None, ylim=None):
     fname = '{}_{}_iso_cell.pdf'.format(opref, kind)
     plt.savefig(fname, dpi=300, bbox_inches='tight')
 
+
+def plot_len_boxplot(sc, bulk, gtf, opref, novelty='Known', kind='gene'):
+    
+    sns.set_context('paper', font_scale=2)
+    
+    # colors
+    known_green = '#009E73'
+    
+    sc_datasets = get_dataset_names(sc)
+    bulk_datasets = get_dataset_names(bulk)
+    sample_df = get_sample_df(sc_datasets+bulk_datasets)
+    color = known_green
+    
+    df_copy, df = make_counts_table(bulk, sc, sample_df, gtf, kind=kind, novelty=novelty)
+    
+    try:
+        df.reset_index(inplace=True)
+    except:
+        pass
+    
+    df['kind'] = np.nan
+    order = ['Bulk only', 'sc only', 'sn only']
+    df.loc[(df['sc MB']==False)&(df['sn MB']==False)&(df['sn MT']==False), 'kind'] = 'Bulk only'
+    df.loc[(df['Bulk MB']==False)&(df['Bulk MT']==False)&(df['sn MB']==False)&(df['sn MT']==False), 'kind'] = 'sc only'
+    df.loc[(df['Bulk MB']==False)&(df['Bulk MT']==False)&(df['sc MB']==False), 'kind'] = 'sn only'
+      
+    if kind == 'gene':
+        y = 'Gene length'
+    elif kind == 'transcript':
+        y = 'Transcript length'
+    df.rename({'len':y}, axis=1, inplace=True)
+    
+    ax = sns.boxplot(data=df, x='kind', y=y, color=color, saturation=1, order=order)
+    ax.set_yscale('log')
+    ax.set_xlabel('')
+    
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    
+    fname = '{}_{}_{}_detection_bulk_sc_boxplot.pdf'.format(opref, novelty, kind)
+    plt.savefig(fname, dpi=300, bbox_inches='tight')  
+    
+    plt.show()
