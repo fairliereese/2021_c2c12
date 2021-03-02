@@ -235,3 +235,120 @@ def group_table(bulk, sc, sample_df, kind='gene'):
     df = df[cols]
     
     return df
+
+def make_cond_map(groups, group_names):
+    cond_map = dict()
+    for group, group_name in zip(groups, group_names):
+        for c in group:
+            cond_map[c] = group_name
+    return cond_map
+
+# calculate the normalized average or sum of TSS expression 
+# per cell from the TSS anndata object
+def calc_exp(adata, groups, group_names, how='tss', cpm=False):
+    
+    try:
+        adata.var.reset_index(inplace=True)
+    except:
+        pass
+    
+    if how == 'tss':
+        id_col = 'tss_id'
+    elif how == 'iso':
+        id_col = 'transcript_id'
+        
+    # conditions map
+    cond_map = make_cond_map(groups, group_names)
+    col = 'condition'
+    adata.obs[col] = adata.obs.leiden.map(cond_map)
+    
+    # make df that we can groupby
+    colnames = adata.var[id_col].tolist()
+    rownames = adata.obs.merged_bc.tolist()    
+    raw = adata.X
+    gene_names = adata.var.gene_name.tolist()
+    df = pd.DataFrame(data=raw, index=rownames, columns=colnames)
+    df.reset_index(inplace=True)
+    df.rename({'index':'merged_bc'}, axis=1, inplace=True)
+    samp = adata.obs[['merged_bc', col]]
+    df = df.merge(samp, how='left', on='merged_bc')
+    
+    # limit to only the cells that we want in this condition
+    df[col] = df[col].astype('str')
+    df = df.loc[df[col].isin(group_names)]
+        
+    # groupby sample type and sum over gen
+    df.drop('merged_bc', axis=1, inplace=True)
+    df = df.groupby(col).sum().reset_index()
+    
+    if cpm:
+        # since these values haven't been normalized yet, do that
+        # CPM : (counts/total_counts)* 1**6
+        # Note : ATAC values were pre-normalized
+        df.set_index(col, inplace=True)
+        df = df.transpose()
+        for c in group_names:
+            total_counts = df[c].sum()
+            df[c] = (df[c]/total_counts)*(1^6)
+        df = df.transpose()
+        df.reset_index(inplace=True)
+    
+    # melty boi
+    tss_cols = df.columns.tolist()[1:]
+    df = df.melt(id_vars=col, value_vars=tss_cols)
+    
+    # rename some cols
+    df.rename({'variable':id_col,'value':'counts'}, axis=1, inplace=True)
+            
+    # add gene name
+    if how == 'tss':
+        temp = adata.var[[id_col, 'gene_name']]
+    df = df.merge(temp, how='left', on=id_col)
+    
+    return df  
+
+def calc_iso_exp(df, groups, group_names, cpm=False):
+    
+    counts_cols = [i for j in groups for i in j]
+    df = df[counts_cols]
+    colnames = df.columns
+    rownames = df.index.tolist()
+    raw = df.to_numpy()
+    
+    df = pd.DataFrame(data=raw, index=rownames, columns=colnames)
+    df = df.transpose()   
+    df.reset_index(inplace=True)
+    df.rename({'index':'cluster_id'}, axis=1, inplace=True)
+    
+    cond_map = make_cond_map(groups, group_names)
+    df['condition'] = df.cluster_id.map(cond_map)   
+    df.set_index('cluster_id', inplace=True)
+    df = df.groupby('condition').sum()
+    
+    df = df.transpose()    
+    if cpm:
+        # since these values haven't been normalized yet, do that
+        # CPM : (counts/total_counts)* 1**6
+        # Note : ATAC values were pre-normalized
+        for c in group_names:
+            total_counts = df[c].sum()
+            df[c] = (df[c]/total_counts)*(1^6)
+        
+    df = df.rename_axis(None, axis=1)
+    df.reset_index(inplace=True)
+    df.rename({'index': 'tid'}, axis=1, inplace=True)
+    
+    # get tss ID
+    df['tss_id'] = df['tid'].str.split('_', n=1, expand=True)[1]
+    df['tid'] = df['tid'].str.split('_', n=1, expand=True)[0]
+    
+    df.set_index(['tss_id', 'tid'], inplace=True)
+    
+    # sort by expression
+    df['total'] = df.sum(axis=1)
+    df = df.sort_values(by=['tss_id', 'total'], ascending=[True, False])
+    df.drop('total', axis=1, inplace=True)
+    df.reset_index(inplace=True)
+    
+    return df   
+
