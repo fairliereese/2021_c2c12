@@ -35,12 +35,12 @@ def get_illumina_metadata():
 
     # merge bc1 df with illumina data 
     df = df.merge(bc_df, how='left', left_on='bc1', right_on='bc1_dt')
-    df.rename({'bc1_randhex': 'Random hexamer', 'bc1_dt':'Poly dT'}, axis=1, inplace=True)
+    df.rename({'bc1_randhex': 'Random hexamer', 'bc1_dt':'Oligo dT'}, axis=1, inplace=True)
 
     # melt df to duplicate entries b/w dt and randhex primers for each cell
     id_vars = ['sample', 'ill_umi_count', 'ill_gene_count',\
                'bc', 'bc3', 'bc2', 'bc1', 'well']
-    value_vars = ['Poly dT', 'Random hexamer']
+    value_vars = ['Oligo dT', 'Random hexamer']
 
     temp = pd.melt(df, id_vars=id_vars, value_vars=value_vars)
     temp.rename({'variable': 'primer_type', 'value': 'raw_bc1', 'bc': \

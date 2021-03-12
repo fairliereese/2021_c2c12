@@ -22,8 +22,8 @@ def get_talon_nov_colors():
 def get_priming_colors():
     blue = '#0072B2'
     red_orange = '#D55E00'
-    c_dict = {'Random hexamer': red_orange, 'Poly dT': blue}
-    order = ['Poly dT', 'Random hexamer']
+    c_dict = {'Random hexamer': red_orange, 'Oligo dT': blue}
+    order = ['Oligo dT', 'Random hexamer']
     
     return c_dict, order
 
