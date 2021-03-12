@@ -1,5 +1,6 @@
 # Figure 1
 
+#### For the long-read single-cell data
 * CCS reads were generated from raw PacBio reads usin the CCS softare from the SMRT analysis software suite (parameters: --skip-polish --min-length=10 --min-passes=3 --min-rq=0.9 --min-snr=2.5) 
 * The Split-seq adapters were identified and removed using Lima (v2.0.0) (parameters: --ccs --min-score 0  --min-end-score 0 --min-signal-increase 0 --min-score-lead 0) 
 * Full-length non-chimeric reads were generated with IsoSeq3's Refine (v3.4.0)
@@ -8,8 +9,20 @@
 * Reads were mapped to the mm10 reference genome using Minimap2 (v2.17-r94) (-ax splice:hq -uf --MD)
 * Long-read sequencing artifacts were corrected with TranscriptClean (--canonOnly --primaryOnly)
 * Reads were annotated to their transcripts of origin using TALON (https://github.com/mortazavilab/TALON/tree/cb_tag) (--cb) and the GENCODE vM21 annotation. Each cell is its own dataset in the output TALON database.
-* NIC and NCC transcripts were filtered for those that were seen in 2 or more cells
+* NIC and NCC transcripts were filtered for those that were seen in 4 or more half-cells (as at this point the data is still represented by its barcode which could either be oligo dT primed or randomly primed)
+* Random hexamer and oligo dT cell halves were merged 
+* Scanpy was used to create a UMAP, cluster, and normalize the single cell data 
 
+#### For the long-read bulk data
+* Bulk PacBio data was processed following the [ENCODE Long-read RNA-seq analysis protocol](https://www.encodeproject.org/documents/a84b4146-9e2d-4121-8c0c-1b6957a13fbf) for Mouse Samples (v1.0) for CCS, Lima, Refine, and TranscriptClean steps. 
+* TALON was run (--cov 0.9 --identity 0.8)
+* Novel transcript models were filtered (--minCount 5 --minDatasets 2 --maxFracA 0.5)
+* Transcript abundances were quantified using the talon_abundance module
+
+
+## Figures made in Python
+
+The following figures were made in Python and the relevant notebook used to generate them can be seen in [figure_1.ipynb](https://github.com/fairliereese/2021_c2c12/blob/master/figure_1/figure_1.ipynb)
 
 ```python
 import sys
@@ -24,9 +37,10 @@ from scripts.utils import *
 from scripts.plotting import *
 ```
 
-
 ```python
 # read in the data relevant for this figure
+
+# output from the TALON run
 def get_sc_data():
     fname = '../processing/talon/sc_talon_read_annot.tsv'
 
@@ -35,18 +49,22 @@ def get_sc_data():
     
     return df
 
+# output from transforming the unfiltered TALON abundanca matrix into 
+# a scanpy AnnData object
 def get_sc_adata():
     fname = '../processing/scanpy/sc_gene.h5ad'
     adata = sc.read(fname)
     
     return adata
     
+# output from TALON filtering
 def get_sc_whitelist():
     fname = '../processing/talon/sc_whitelist.csv'
     whitelist = read_whitelist(fname)
     
     return whitelist
 
+# output from the TALON run that included both the bulk and the single-cell data
 def get_sc_bulk_data():
     fname = '../processing/talon/bulk_sc_talon_read_annot.tsv'
 
@@ -263,8 +281,3 @@ plot_transcript_novelty(df, opref, c_dict, order, title='Filtered',
     
 ![png](figures/output_21_1.png)
     
-
-
-
-    <Figure size 432x288 with 0 Axes>
-
