@@ -29,18 +29,19 @@ from scripts.utils import *
 from scripts.plotting import *
 ```
 
+    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:21: FutureWarning: pandas.core.index is deprecated and will be removed in a future version.  The public classes are available in the top-level namespace.
+      from pandas.core.index import RangeIndex
+
+
 
 ```python
 # read in the data relevant for this figure
-
-# output from the bulk+sc TALON run
 def get_sc_data():
     fname = '../processing/talon/sc_talon_abundance_filtered.tsv'
     df = pd.read_csv(fname, sep='\t')    
     df['experiment'] = 'bulk'
     return df
 
-# output from the bulk+sc TALON run
 def get_bulk_data():
     fname = '../processing/talon/bulk_talon_abundance_filtered.tsv'
     df = pd.read_csv(fname, sep='\t')
@@ -52,8 +53,6 @@ def get_bulk_data():
     df['experiment'] = 'sc'
     return df
 
-# output from transforming the unfiltered TALON abundance matrix into 
-# a scanpy AnnData object
 def get_sc_adata():
     fname = '../processing/scanpy/sc_gene.h5ad'
     adata = sc.read(fname)
@@ -185,12 +184,6 @@ sc.pl.umap(adata, color='leiden', frameon=False, size=120, show=False)
 plt.savefig('{}_umap_leiden.pdf'.format(opref), dpi=300, bbox_inches='tight')
 ```
 
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-
-
-
-    
 ![png](figures/output_15_1.png)
     
 
@@ -225,35 +218,25 @@ for g in genes:
 
     
 ![png](figures/output_19_0.png)
-  
-
+    
 ![png](figures/output_19_2.png)
     
-    
 ![png](figures/output_19_4.png)
-  
-
-![png](figures/output_19_6.png)
     
+![png](figures/output_19_6.png)
     
 ![png](figures/output_19_8.png)
     
-
 ![png](figures/output_19_10.png)
     
-    
 ![png](figures/output_19_12.png)
-
     
 ![png](figures/output_19_14.png)
-    
-    
+       
 ![png](figures/output_19_16.png)
-    
- 
+       
 ![png](figures/output_19_18.png)
-    
-    
+      
 ## Figures made in R
 
 The following figures were made in R and the relevant notebook used to generate them can be seen in [figure_2_R.ipynb](https://github.com/fairliereese/2021_c2c12/blob/master/figure_2/figure_2_R.ipynb)
