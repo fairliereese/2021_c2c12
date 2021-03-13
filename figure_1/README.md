@@ -189,12 +189,6 @@ df = get_sc_bulk_data()
 c_dict, order = get_tech_colors()
 plot_read_len_kde(df, 'tech', c_dict, order, opref, common_norm=False)
 ```
-
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/IPython/core/interactiveshell.py:3347: DtypeWarning: Columns (18) have mixed types.Specify dtype option on import or set low_memory=False.
-      if (await self.run_code(code, result,  async_=asy)):
-
-
-
     
 ![png](figures/output_15_1.png)
     
