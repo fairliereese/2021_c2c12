@@ -4,7 +4,7 @@ This repository contains the code to generate each of the figures from our 2021 
 
 <!-- which can be found [here](). -->
 
-Each figure is in its own directory with an explanatino of the preprocessing steps that were performed to generate the data used to make the plots. 
+Each figure is in its own directory with an explanation of the preprocessing steps that were performed to generate the data used to make the plots. 
 
 <!-- * [Figure 1]()
 * [Figure 2]()

@@ -11,7 +11,7 @@
 * Reads were annotated to their transcripts of origin using TALON (https://github.com/mortazavilab/TALON/tree/cb_tag) (--cb) and the GENCODE vM21 annotation. Each cell is its own dataset in the output TALON database.
 * NIC and NCC transcripts were filtered for those that were seen in 4 or more half-cells (as at this point the data is still represented by its barcode which could either be oligo dT primed or randomly primed)
 * Random hexamer and oligo dT cell halves were merged 
-* Scanpy was used to create a UMAP, cluster, and normalize the single cell data 
+* Scanpy was used to filter, create a UMAP, cluster, and normalize the single-cell data 
 
 #### For the long-read bulk data
 * Bulk PacBio data was processed following the [ENCODE Long-read RNA-seq analysis protocol](https://www.encodeproject.org/documents/a84b4146-9e2d-4121-8c0c-1b6957a13fbf) for Mouse Samples (v1.0) for CCS, Lima, Refine, and TranscriptClean steps. 
@@ -49,7 +49,7 @@ def get_sc_data():
     
     return df
 
-# output from transforming the unfiltered TALON abundanca matrix into 
+# output from transforming the unfiltered TALON abundance matrix into 
 # a scanpy AnnData object
 def get_sc_adata():
     fname = '../processing/scanpy/sc_gene.h5ad'
