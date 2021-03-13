@@ -13,6 +13,8 @@
 
 ## Figures made in Python
 
+The following figures were made in Python and the relevant notebook used to generate them can be seen in [figure_2.ipynb](https://github.com/fairliereese/2021_c2c12/blob/master/figure_2/figure_2.ipynb)
+
 ```python
 import sys
 import os
@@ -253,6 +255,8 @@ for g in genes:
     
     
 ## Figures made in R
+
+The following figures were made in R and the relevant notebook used to generate them can be seen in [figure_2_R.ipynb](https://github.com/fairliereese/2021_c2c12/blob/master/figure_2/figure_2_R.ipynb)
 
 ```R
 library(Seurat)
