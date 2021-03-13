@@ -308,10 +308,7 @@ p
 ```
 
 
-
-
-    
-![png](figuresoutput_4_1.png)
+![png](figures/output_4_1.png)
     
 
 
@@ -328,7 +325,7 @@ p
 
 
     
-![png](figures/output_6_0.png)
+![png](figures/output_6_0_R.png)
     
 
 
