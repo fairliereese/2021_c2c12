@@ -223,7 +223,7 @@ plot_detection_venn(bulk, sc, opref, transcript_nov='NIC', \
 
 
     
-![png](output_18_0.png)
+![png](figures/output_18_0.png)
     
 
 
