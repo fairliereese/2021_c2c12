@@ -37,6 +37,7 @@ from scripts.utils import *
 from scripts.plotting import *
 ```
 
+
 ```python
 # read in the data relevant for this figure
 
@@ -49,7 +50,7 @@ def get_sc_data():
     
     return df
 
-# output from transforming the unfiltered TALON abundance matrix into 
+# output from transforming the unfiltered TALON abundanca matrix into 
 # a scanpy AnnData object
 def get_sc_adata():
     fname = '../processing/scanpy/sc_gene.h5ad'
@@ -64,7 +65,6 @@ def get_sc_whitelist():
     
     return whitelist
 
-# output from the TALON run that included both the bulk and the single-cell data
 def get_sc_bulk_data():
     fname = '../processing/talon/bulk_sc_talon_read_annot.tsv'
 
@@ -186,7 +186,13 @@ plot_reads_per_cell_nov(df, 'sample', c_dict, order, opref)
 ```python
 opref = 'figures/bulk_vs_sc'
 df = get_sc_bulk_data()
-c_dict, order = get_tech_colors()
+
+# myoblasts only, no genomic reads, no single-nucleus
+df = df.loc[df['sample'].isin(['MB', 'MB_cells'])]
+df = df.loc[(df.primer_type == 'Oligo dT')|(df.tech=='Bulk')]
+df = df.loc[df.transcript_novelty != 'Genomic']
+
+c_dict, order = get_2_tech_colors()
 plot_read_len_kde(df, 'tech', c_dict, order, opref, common_norm=False)
 ```
     
@@ -275,3 +281,4 @@ plot_transcript_novelty(df, opref, c_dict, order, title='Filtered',
     
 ![png](figures/output_21_1.png)
     
+

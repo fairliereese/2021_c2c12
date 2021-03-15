@@ -91,6 +91,8 @@ def add_read_annot_metadata(df, bulk=False):
         sample_df.drop(['sample', 'raw_bc'], axis=1, inplace=True)
         
         df = df.merge(sample_df, how='left', on='dataset')
+        df.loc[df.dataset.isin(['PB154', 'PB155']), 'sample'] = 'MB'
+        df.loc[df.dataset.isin(['PB213', 'PB214']), 'sample'] = 'MT'
     
     return df
 

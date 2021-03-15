@@ -81,6 +81,17 @@ def get_tech_colors():
     
     return c_dict, order
 
+def get_2_tech_colors():
+
+    yellow = '#EBC046'
+    magenta = 'mediumvioletred'
+
+    c_dict = {'Bulk': yellow, \
+              'Single-cell': magenta}
+    order = ['Bulk', 'Single-cell']
+    
+    return c_dict, order
+
 def get_cat_cmap():
     
     # get condition and cluster colors
@@ -116,7 +127,7 @@ def plot_read_len_kde(df, hue, c_dict, order, opref, common_norm=True):
                  palette=c_dict, kind='kde', hue_order=order, linewidth=3, 
                  common_norm=common_norm)
     ax.set(xlabel='Read length', ylabel='KDE of reads',
-          title='Length distribution of Reads')
+          title='Length distribution of Reads', xlim=(0,7500))
     plt.savefig('{}_read_length_kde.pdf'.format(opref), dpi=300, bbox_inches='tight')
     
 # plot proportion of reads per nov. cat per cell
