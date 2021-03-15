@@ -603,7 +603,6 @@ def plot_exon_hist(df, opref, xlim=30):
         
 def plot_umis_v_barcodes(df, opref):	
     sns.set_context("paper", font_scale=1.8)
-    print('hello world')
     bc_cols = ['bc1', 'bc2', 'bc3', 'state']
 
     # only want unique bc/umi combos

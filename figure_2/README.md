@@ -36,12 +36,15 @@ from scripts.plotting import *
 
 ```python
 # read in the data relevant for this figure
+
+# output from the TALON run (sc only)
 def get_sc_data():
     fname = '../processing/talon/sc_talon_abundance_filtered.tsv'
     df = pd.read_csv(fname, sep='\t')    
     df['experiment'] = 'bulk'
     return df
 
+# output from the TALON run (bulk only)
 def get_bulk_data():
     fname = '../processing/talon/bulk_talon_abundance_filtered.tsv'
     df = pd.read_csv(fname, sep='\t')
@@ -53,6 +56,7 @@ def get_bulk_data():
     df['experiment'] = 'sc'
     return df
 
+# output from scanpy
 def get_sc_adata():
     fname = '../processing/scanpy/sc_gene.h5ad'
     adata = sc.read(fname)
