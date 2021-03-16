@@ -127,7 +127,8 @@ def plot_read_len_kde(df, hue, c_dict, order, opref, common_norm=True):
                  palette=c_dict, kind='kde', hue_order=order, linewidth=3, 
                  common_norm=common_norm)
     ax.set(xlabel='Read length', ylabel='KDE of reads',
-          title='Length distribution of Reads', xlim=(0,7500))
+          title='Length distribution of Reads', xlim=(0,7500),
+          xticks=[0, 2500, 5000, 7500])
     plt.savefig('{}_read_length_kde.pdf'.format(opref), dpi=300, bbox_inches='tight')
     
 # plot proportion of reads per nov. cat per cell

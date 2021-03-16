@@ -16,12 +16,30 @@ get_sample_colors <- function() {
     return(colors)
 }
 
+get_atac_sample_colors <- function() {
+    
+    mt_green = '#019f73'
+    mb_pink = '#cb79a7'
+    colors = list(mb_pink, mt_green)
+    names(colors) = c('MB', 'MT')
+    
+    return(colors)
+}
+
 get_40k_clust_colors <- function() {
     cluster20_colors = c("#CBD844","#C193C6","#FAD53E","#E28BC3","#D7BF9C",
                      "#C79693","#66C2A5","#E7C689","#C5B9A7","#9F9BC9",
                      "#AAD852","#9E9DBA","#9DAE8C","#D49A73","#ECD836",
                      "#D2A29F","#BABF77","#B3B3B3","#F08F6D","#F1CD64")
     return(cluster20_colors)
+}
+
+get_atac_clust_colors <- function() {
+    cluster_colors = c("#66C2A5" ,"#D3A0A2", "#B3B3B3", "#B795C7", "#DC8CC3", 
+                   "#EBC87C" ,"#C7BAA6","#DCC199", "#D5D840", "#F9D831",
+                   "#B9C174", "#B0D84F" ,"#929ECA" ,"#E1966D","#B499A5" ,
+                   "#F5D152", "#E1917A" ,"#A3AC89")
+    return(cluster_colors)
 }
 
 get_celltype_colors <- function() {

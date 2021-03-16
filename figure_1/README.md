@@ -195,6 +195,7 @@ df = df.loc[df.transcript_novelty != 'Genomic']
 c_dict, order = get_2_tech_colors()
 plot_read_len_kde(df, 'tech', c_dict, order, opref, common_norm=False)
 ```
+
     
 ![png](figures/output_15_1.png)
     
@@ -281,4 +282,3 @@ plot_transcript_novelty(df, opref, c_dict, order, title='Filtered',
     
 ![png](figures/output_21_1.png)
     
-
