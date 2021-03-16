@@ -24,6 +24,16 @@ get_40k_clust_colors <- function() {
     return(cluster20_colors)
 }
 
+get_celltype_colors <- function() {
+    green = '#019F73'
+    pink = '#CB79A7'
+    dark_green = '#08684C'
+    colors = list(pink, green, dark_green)
+    names(colors) = c('MB', 'MNC', 'MT')
+    
+    return(colors)
+}
+
 get_long_clust_colors <- function() {
     purple = '#8DA0CB'
     yellow = '#FFD92F'
