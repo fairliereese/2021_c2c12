@@ -115,7 +115,7 @@ p
     
 
 
-### Panel S2G
+<!-- ### Panel S2G
 
 
 ```R
@@ -162,7 +162,7 @@ dev.off()
 p
 ```
     
-![png](figures/output_10_1.png)
+![png](figures/output_10_1.png) -->
     
 
 
