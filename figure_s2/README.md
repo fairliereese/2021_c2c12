@@ -3,7 +3,7 @@
 #### For the short-read single-cell data
 * TODO @Liz
 
-Panels A, B, D were output from the Splitpipe code.
+Panels A, B, D were output from the Splitpipe code
 
 
 ```R
@@ -62,9 +62,6 @@ dev.off()
 p
 ```
 
-
-
-    
 ![png](figures/output_4_1.png)
     
 
@@ -89,8 +86,6 @@ dev.off()
 p
 ```
 
-
-    
 ![png](figures/output_6_1.png)
     
 
@@ -116,9 +111,6 @@ dev.off()
 p
 ```
 
-
-
-    
 ![png](figures/output_8_2.png)
     
 
@@ -169,14 +161,12 @@ p
 dev.off()
 p
 ```
-
-
     
 ![png](figures/output_10_1.png)
     
 
 
-### Panel S2H
+### Panel S2G
 
 
 ```R
@@ -209,8 +199,42 @@ dev.off()
 p
 ```
 
-    
 ![png](figures/output_12_2.png)
+    
+
+
+### Panel S2H
+
+
+```R
+mb_mt = get_40k_sc_data()
+colors = get_40k_clust_colors()
+
+Idents(mb_mt) = mb_mt@meta.data$final_clusters_ordered
+cluster.averages <- AverageExpression(mb_mt, return.seurat = TRUE)
+
+# G1: Mki67, Ccnd1, Cdk2, Mcm6 
+# G1/S: Ccne1 (and a1, a2)
+# S: Pcna
+# G2: Gmnn
+# G2M: Top2a, Aurka, Aurkb, Ccna2 (no a1 expr)
+# M: Ccnb1
+cycle = c("Mki67","Ccnd1","Cdk2","Mcm6",
+          "Ccne1","Pcna","Gmnn","Top2a","Aurka","Aurkb","Ccna2","Ccnb1")
+
+fname = "figures/heatmap_20clusters_cellcycle.pdf"
+pdf(file=fname,
+    width = 3, 
+    height = 2.75)
+p = DoHeatmap(cluster.averages, label=T,features = cycle, 
+          group.colors = colors, raster=F,draw.lines = FALSE) + 
+  scale_fill_viridis() + theme(axis.text.y = element_text(size = 23)) & NoLegend()
+p
+dev.off()
+p
+```
+
+![png](figures/output_14_2.png)
     
 
 
@@ -240,7 +264,6 @@ dev.off()
 p
 ```
 
-    
-![png](figures/output_14_2.png)
+![png](figures/output_16_2.png)
     
 
