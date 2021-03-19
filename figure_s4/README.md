@@ -75,7 +75,7 @@ plot_ends_iso(df, tss, opref, kind='tss', xlim=xlim, ylim=ylim)
 
 
     
-![png](output_3_0.png)
+![png](figures/output_3_0.png)
     
 
 
@@ -96,7 +96,7 @@ plot_ends_iso(df, tes, opref, kind='tes', xlim=xlim, ylim=ylim)
 
 
     
-![png](output_5_0.png)
+![png](figures/output_5_0.png)
     
 
 
@@ -117,7 +117,7 @@ plot_ends_iso_cell(df, tes, opref, kind='tes', xlim=xlim, ylim=ylim)
 
 
     
-![png](output_7_0.png)
+![png](figures/output_7_0.png)
     
 
 
@@ -135,38 +135,26 @@ for tss in tsss:
     ofig = '{}_{}_umap.pdf'.format(opref, tss)
     plt.savefig(ofig, dpi=300, bbox_inches='tight')  
 ```
-
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-
-
-
-    
-![png](output_9_1.png)
+   
+![png](figures/output_9_1.png)
     
 
 
 
     
-![png](output_9_2.png)
+![png](figures/output_9_2.png)
     
 
 
 
     
-![png](output_9_3.png)
+![png](figures/output_9_3.png)
     
 
 
 
     
-![png](output_9_4.png)
+![png](figures/output_9_4.png)
     
 
 
@@ -181,57 +169,25 @@ for tss in tsss:
     plt.savefig(ofig, dpi=300, bbox_inches='tight')
 ```
 
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/anndata/_core/anndata.py:1154: FutureWarning: is_categorical is deprecated and will be removed in a future version.  Use is_categorical_dtype instead
-      if is_string_dtype(df[key]) and not is_categorical(df[key])
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-    /Users/fairliereese/miniconda3/lib/python3.7/site-packages/seaborn/_decorators.py:43: FutureWarning: Pass the following variable as a keyword arg: x. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      FutureWarning
-
-
 
     
-![png](output_11_1.png)
+![png](figures/output_11_1.png)
     
 
 
 
     
-![png](output_11_2.png)
+![png](figures/output_11_2.png)
     
 
 
 
     
-![png](output_11_3.png)
+![png](figures/output_11_3.png)
     
 
 
 
     
-![png](output_11_4.png)
+![png](figures/output_11_4.png)
     
-
-
-
-```python
-
-```
