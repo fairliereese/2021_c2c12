@@ -1,6 +1,6 @@
 # Figure S2
 
-#### For the short-read single-cell data
+#### For the short-read sc/sn RNA-seq data
 * TODO @Liz
 
 Panels A, B, D were output from the Splitpipe code
