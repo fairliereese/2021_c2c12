@@ -275,7 +275,7 @@ dev.off()
 p
 ```
 
-![png](output_11_2_R.png)
+![png](figures/output_11_2_R.png)
     
 
 
