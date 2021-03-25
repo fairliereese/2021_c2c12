@@ -47,10 +47,11 @@ get_filt_atac <- function() {
 }
 
 # bed files for TSSs 
+# bed files for TSSs 
 get_tss_beds <- function() {
-    sc_tss_20 = read.delim('../processing/ends/sc_tss_20_combo_gencode_prmenhP_cage_snatac.bed')
-    sc_tss_20_ends = read.delim('../processing/ends/sc_tss_20.sort.bed')
-    return(list(sc_tss_20, sc_tss_20_ends))
+    sc_tss_10 = read.delim('../processing/ends/sc_tss_10_combo_gencode_prmenhP_cage_snatac18.bed')
+    sc_tss_10_ends = read.delim('../processing/ends/sc_tss_10.sort.bed')
+    return(list(sc_tss_10, sc_tss_10_ends))
 }
 
 # log2FC tables - MB vs. MT
@@ -139,19 +140,19 @@ p
 
 ```R
 objs = get_tss_beds()
-sc_tss_20 = objs[[1]]
-sc_tss_20_ends = objs[[2]]
+sc_tss_10 = objs[[1]]
+sc_tss_10_ends = objs[[2]]
 
-colnames(sc_tss_20) = c("end_chr","end_start","ends_stop","end_readID",
+colnames(sc_tss_10) = c("end_chr","end_start","ends_stop","end_readID",
                         "end_score","end_strand","combo_chr","combo_start",
                         "combo_stop","combo_name","combo_score","combo_strand")
-colnames(sc_tss_20_ends) = c("end_chr","end_start","ends_stop","end_readID",
+colnames(sc_tss_10_ends) = c("end_chr","end_start","ends_stop","end_readID",
                              "end_score","end_strand")
 
-sc_tss_20$end_id_nreads = sapply(strsplit(as.character(sc_tss_20$end_readID), "ccs_"), "[[", 2)
-sc_tss_20_ends$end_id_nreads = sapply(strsplit(as.character(sc_tss_20_ends$end_readID), "ccs_"), "[[", 2)
+sc_tss_10$end_id_nreads = sapply(strsplit(as.character(sc_tss_10$end_readID), "ccs_"), "[[", 2)
+sc_tss_10_ends$end_id_nreads = sapply(strsplit(as.character(sc_tss_10_ends$end_readID), "ccs_"), "[[", 2)
 
-tss_missing = sc_tss_20_ends$end_id_nreads[which((sc_tss_20_ends$end_id_nreads %in% sc_tss_20$end_id_nreads) == FALSE)]
+tss_missing = sc_tss_10_ends$end_id_nreads[which((sc_tss_10_ends$end_id_nreads %in% sc_tss_10$end_id_nreads) == FALSE)]
 tss_missing = as.data.frame(tss_missing)
 tss_missing$cage_mm10 = rep(0, length(tss_missing))
 tss_missing$enhP = rep(0, dim(tss_missing)[1])
@@ -159,18 +160,18 @@ tss_missing$gencode_TSS = rep(0, dim(tss_missing)[1])
 tss_missing$prom = rep(0, dim(tss_missing)[1])
 tss_missing$snATAC = rep(0, dim(tss_missing)[1])
 
-sc_tss_20_smol = sc_tss_20[,c("end_id_nreads","combo_name")]
-sc_tss_20_table = dcast(sc_tss_20_smol,end_id_nreads~combo_name,fun.aggregate = function(x){as.integer(length(x) > 0)})
-colnames(tss_missing) = colnames(sc_tss_20_table)
-sc_tss_20_table = rbind(sc_tss_20_table, tss_missing)
-sc_tss_20_table$TSS = rep(1,dim(sc_tss_20_table)[1])
+sc_tss_10_smol = sc_tss_10[,c("end_id_nreads","combo_name")]
+sc_tss_10_table = dcast(sc_tss_10_smol,end_id_nreads~combo_name,fun.aggregate = function(x){as.integer(length(x) > 0)})
+colnames(tss_missing) = colnames(sc_tss_10_table)
+sc_tss_10_table = rbind(sc_tss_10_table, tss_missing)
+sc_tss_10_table$TSS = rep(1,dim(sc_tss_10_table)[1])
 
-fname  = "figures/sc_tss_20pct_upset.pdf"
+fname  = "figures/sc_tss_10pct_upset.pdf"
 pdf(file = fname,   
     width = 10,
     height = 4)
 p = upset(
-  sc_tss_20_table,
+  sc_tss_10_table,
   nsets = 7,
   nintersects = NA,
   order.by = "freq",
