@@ -1,21 +1,19 @@
 # Figure S4
 
-#### For the TSS/TES calling in both single-cell and long-read
-* Data was processed via the steps outlined in [figure 4](https://github.com/fairliereese/2021_c2c12/tree/master/figure_4)
+#### For the short-read sc/sn RNA-seq data
+* TODO @Liz
 
-## Figures made in R
+#### For the short-read snATAC-seq data
+* TODO @Liz
 
 ```R
 library(Signac)
 library(Seurat)
-library(rtracklayer)
-library(GenomicRanges)
+library(ggplot2)
+library(dplyr)
 library(EnsDb.Mmusculus.v79)
 library(viridis)
-library(RColorBrewer)
-library(ggplot2)
-library(UpSetR)
-library(reshape2)
+set.seed(1234)
 
 source('../scripts/plotting.R')
 ```
@@ -23,173 +21,206 @@ source('../scripts/plotting.R')
 
 ```R
 # filtered snATAC output from Signac
-get_filt_tss_atac <- function() {
-    load('../processing/ends/mb_mt_atac_tss_10pct_filt.rda')
-    obj = mb_mt_atac_tss
+get_filt_atac <- function() {
+    load('../processing/signac/sn_filt.rda')
+    obj = mb_mt_atac
     return(obj)
 }
 
-# bulk TESs
-get_bulk_tes_beds <- function() {
-    bulk_tes_80 = read.delim('../processing/ends/bulk_tes_80_combo_gencode_polyA.bed', stringsAsFactors = F, header = F)
-    bulk_tes_80_ends = read.delim('../processing/ends/bulk_tes_80.sort.bed', stringsAsFactors = F, header = F)
-    return(list(bulk_tes_80, bulk_tes_80_ends))
+# RNA + ATAC integration 
+get_rna_atac <- function() {
+    load('../processing/signac/atac_rna_integrated.rda')
+    transfer.anchors = transfer.anchors
+    return(transfer.anchors)
 }
 
-# sc TESs
-get_sc_tes_beds <- function() {
-    sc_tes_80 = read.delim('../processing/ends/sc_tes_80_combo_gencode_polyA.bed', stringsAsFactors = F, header = F)
-    sc_tes_80_ends = read.delim('../processing/ends/sc_tes_80.sort.bed', stringsAsFactors = F, header = F)
-    return(list(sc_tes_80, sc_tes_80_ends))
-}
-
-# bed files for TSSs 
-get_tss_beds <- function() {
-    bulk_tss_5 = read.delim('../processing/ends/bulk_tss_5_combo_gencode_prmenhP_cage_snatac18.bed', stringsAsFactors = F, header = F)
-    bulk_tss_5_ends = read.delim('../processing/ends/bulk_tss_5.sort.bed', stringsAsFactors = F, header = F)
-    return(list(bulk_tss_5, bulk_tss_5_ends))
-}
-
-# get TSS + read annot for long-Split-seq data
-get_tss_annot <- function() {
-    tss_annot = as.data.frame(read.delim('../processing/ends/sc_tss_10.sort.bed', header = F))
-    return(tss_annot)
+# unfiltered 40k cell dataset output from Seurat
+get_40k_sc_data <- function() {
+    load('../processing/seurat/sc_40k.rda')
+    seurat_obj = mb_mt
+    return(seurat_obj)
 }
 ```
 
-### Panel S4A
+### Panel S4B
 
 
 ```R
-tss_annot = get_tss_annot()
-tss_annot$n_reads = as.numeric(sapply(strsplit(sapply(strsplit(as.character(tss_annot$V4), "ccs_"), "[[", 2), "_"), "[[", 2))
+obj = get_filt_atac()
+colors = get_atac_sample_colors()
 
-fname = "figures/histogram.pdf"
-pdf(file = fname,
-    width = 8,
-    height = 8)
-p = ggplot(tss_annot, aes(x=log2(n_reads)))  + 
-  geom_histogram(colour="black", fill="#74C4ED",binwidth=0.3)+theme_bw()+
-  theme(legend.position = "none",axis.text=element_text(size=12),
-        axis.title=element_text(size=14)) +xlab("Log2(Number of reads per Split-seq TSS)")+ylab("Number of TSSs")
+fname="figures/qc_violin_snatac.pdf"
+pdf(file=fname,
+    width =  10, 
+    height = 6)
+p = VlnPlot(
+  object = obj,
+  features = c('TSS.enrichment', 'nucleosome_signal','nCount_ATAC','nFeature_RNA'),
+  pt.size = 0,
+  ncol = 4,
+  group.by = "CellType",
+  cols = colors)
 p
 dev.off()
 p
 ```
 
-   
-![png](figures/output_3_1.png)
-
     
+![png](figures/output_3_1.png)
+    
+
 
 ### Panel S4C
 
 
 ```R
-objs = get_tss_beds()
-bulk_tss_5 = objs[[1]]
-bulk_tss_5_ends = objs[[2]]
+obj = get_filt_atac()
 
-colnames(bulk_tss_5) = c("end_chr","end_start","ends_stop","end_readID",
-                        "end_score","end_strand","combo_chr","combo_start",
-                        "combo_stop","combo_name","combo_score","combo_strand")
-colnames(bulk_tss_5_ends) = c("end_chr","end_start","ends_stop","end_readID",
-                   "end_score","end_strand")
-
-bulk_tss_5$end_id_nreads = sapply(strsplit(as.character(bulk_tss_5$end_readID), "ccs_"), "[[", 2)
-bulk_tss_5_ends$end_id_nreads = sapply(strsplit(as.character(bulk_tss_5_ends$end_readID), "ccs_"), "[[", 2)
-
-tss_missing = bulk_tss_5_ends$end_id_nreads[which((bulk_tss_5_ends$end_id_nreads %in% bulk_tss_5$end_id_nreads) == FALSE)]
-tss_missing = as.data.frame(tss_missing)
-tss_missing$cage_mm10 = rep(0, length(tss_missing))
-tss_missing$enhP = rep(0, dim(tss_missing)[1])
-tss_missing$gencode_TSS = rep(0, dim(tss_missing)[1])
-tss_missing$prom = rep(0, dim(tss_missing)[1])
-tss_missing$snATAC = rep(0, dim(tss_missing)[1])
-
-bulk_tss_5_smol = bulk_tss_5[,c("end_id_nreads","combo_name")]
-bulk_tss_5_table = dcast(bulk_tss_5_smol,end_id_nreads~combo_name,fun.aggregate = function(x){as.integer(length(x) > 0)})
-colnames(tss_missing) = colnames(bulk_tss_5_table)
-bulk_tss_5_table = rbind(bulk_tss_5_table, tss_missing)
-bulk_tss_5_table$TSS = rep(1,dim(bulk_tss_5_table)[1])
-
-fname = "figures/bulk_tss_5pct_upset.pdf"
-pdf(file = fname,
-    width = 10,
+DefaultAssay(obj)="RNA"
+genes = c("Mki67","Pax7","Igfbp5","Col1a1","Itm2a","Myog","Mybph","Myh3")
+fname  = "figures/featureplots_snatac.pdf"
+pdf(file=fname,
+    width = 7.8, 
     height = 4)
-p = upset(
-  bulk_tss_5_table,
-  nsets = 7,
-  nintersects = NA,
-  order.by = "freq",
-  line.size = 1.2,
-  point.size = 3.5,
-  text.scale = 1.5,
-  mb.ratio = c(0.5, 0.5),
-  main.bar.color = "#56B4E9",
-  matrix.color="#56B4E9"
-)
+p = FeaturePlot(obj, order=F, pt.size = 0.1,
+            features = genes,ncol =4,
+            max.cutoff = 'q95') & NoLegend() & NoAxes() & 
+  scale_colour_gradientn(colours = viridis(11))
 p
 dev.off()
 p
 ```
 
- 
 ![png](figures/output_5_2.png)
     
+
+
+### Panel S4D
+
+
+```R
+mb_mt = get_40k_sc_data()
+transfer = get_rna_atac()
+mb_mt_atac = get_filt_atac()
+colors = get_atac_sample_colors()
+
+mb_mt@meta.data$grouped_clusters  = mb_mt@meta.data$final_clusters_ordered 
+Idents(mb_mt) = mb_mt@meta.data$grouped_clusters
+mb_mt=RenameIdents(mb_mt,
+                   '1'='MB', 
+                   '2'='MB',
+                   '3'='MB',
+                   '4'='MB',
+                   '5'='MB',
+                   '6'='MB',
+                   '7'='MB',
+                   '8'='MNC',
+                   '9'='MNC',
+                   '10'='MNC',
+                   '11'='MNC',
+                   '12'='MNC',
+                   '13'='MNC',
+                   '14'='MNC',
+                   '15'='MNC',
+                   '16'='MT',
+                   '17'='MT',
+                   '18'='MT',
+                   '19'='MT',
+                   '20'='MT')
+mb_mt@meta.data$grouped_clusters = Idents(mb_mt) 
+predicted.labels_celltype = TransferData(
+  anchorset = transfer.anchors,
+  refdata = mb_mt$CellType,
+  weight.reduction = mb_mt_atac[['lsi']],
+  dims = 4:30
+)
+
+mb_mt_atac = AddMetaData(object=mb_mt_atac,
+                         metadata=predicted.labels_celltype)
+                         
+fname="figures/atac_rna_integration_celltype.pdf"
+pdf(file=fname,
+    width=5.5,height=5)
+p = DimPlot(mb_mt_atac,
+        group.by = 'predicted.id',
+        label = F,cols = colors) + NoLegend() + NoAxes()
+p
+dev.off()
+p
+
+colors = get_celltype_colors()
+            
+predicted.labels_3celltypes = TransferData(
+  anchorset = transfer.anchors,
+  refdata = mb_mt$grouped_clusters,
+  weight.reduction = mb_mt_atac[['lsi']],
+  dims = 4:30
+)
+
+mb_mt_atac = AddMetaData(object = mb_mt_atac, metadata = predicted.labels_3celltypes)
+fname="figures/atac_rna_integration_3celltype.pdf"
+pdf(file=fname,
+    width=5.5,height=5)
+p = DimPlot(mb_mt_atac,
+        group.by = 'predicted.id',
+        label = F,cols = colors) + NoLegend() + NoAxes()
+p
+dev.off()
+p
+```
+
+![png](figures/atac_rna_integration_celltype.png )
+
+![png](figures/atac_rna_integration_3celltype.png)
+
 
 
 ### Panel S4E
 
 
 ```R
-obj = get_bulk_tes_beds()
-bulk_tes_80 = obj[[1]]
-bulk_tes_80_ends = obj[[2]]
+mb_mt_atac = get_filt_atac()
+colors = get_atac_clust_colors()
 
-colnames(bulk_tes_80) = c("end_chr","end_start","ends_stop","end_readID",
-                         "end_score","end_strand","combo_chr","combo_start",
-                         "combo_stop","combo_name","combo_score","combo_strand")
-colnames(bulk_tes_80_ends) = c("end_chr","end_start","ends_stop","end_readID",
-                              "end_score","end_strand")
-
-bulk_tes_80$end_id_nreads = sapply(strsplit(as.character(bulk_tes_80$end_readID), "ccs_"), "[[", 2)
-bulk_tes_80_ends$end_id_nreads = sapply(strsplit(as.character(bulk_tes_80_ends$end_readID), "ccs_"), "[[", 2)
-
-tss_missing = bulk_tes_80_ends$end_id_nreads[which((bulk_tes_80_ends$end_id_nreads %in% bulk_tes_80$end_id_nreads) == FALSE)]
-tss_missing = as.data.frame(tss_missing)
-tss_missing$gencode_TES = rep(0, length(tss_missing))
-tss_missing$polyA = rep(0, dim(tss_missing)[1])
-
-bulk_tes_80_smol = bulk_tes_80[,c("end_id_nreads","combo_name")]
-bulk_tes_80_table = dcast(bulk_tes_80_smol,end_id_nreads~combo_name,fun.aggregate = function(x){as.integer(length(x) > 0)})
-colnames(tss_missing) = colnames(bulk_tes_80_table)
-bulk_tes_80_table = rbind(bulk_tes_80_table, tss_missing)
-bulk_tes_80_table$TSS = rep(1,dim(bulk_tes_80_table)[1])
-
-fname = "figures/bulk_tes_80pct_upset.pdf"
-pdf(file = fname,
-    width = 4.5,
-    height = 4)
-p = upset(
-  bulk_tes_80_table,
-  nsets = 7,
-  nintersects = NA,
-  order.by = "freq",
-  line.size = 1.2,
-  point.size = 3.5,
-  text.scale = 1.5,
-  mb.ratio = c(0.5, 0.5),
-  main.bar.color = "#E69F00",
-  matrix.color="#E69F00"
-)
+pdf(file=fname,
+    width=3,height=11)
+p = VlnPlot(mb_mt_atac,
+        pt.size = 0, cols = rev(colors),
+       "Pax7",
+       assay ="RNA",
+       group.by = "final_clusters_ordered_reverse") + coord_flip() + NoLegend()
 p
 dev.off()
 p
 ```
 
     
-![png](figures/output_7_2.png)
+![png](figures/output_9_1.png)
+    
+
+
+### Panel S4F
+
+
+```R
+mb_mt_atac = get_filt_atac()
+colors = get_atac_clust_colors()
+
+fname="figures/atac_myog_violin.pdf"
+pdf(file=fname,
+    width=3,height=11)
+p = VlnPlot(mb_mt_atac,
+        pt.size = 0, cols = rev(colors),
+        "Myog",
+        assay ="RNA",
+        group.by = "final_clusters_ordered_reverse") + coord_flip() + NoLegend()
+p
+dev.off()
+p
+```
+
+  
+![png](figures/output_11_1.png)
     
 
 
@@ -197,276 +228,26 @@ p
 
 
 ```R
-obj = get_sc_tes_beds()
-sc_tes_80 = obj[[1]]
-sc_tes_80_ends = obj[[2]]
+mb_mt_atac = get_filt_atac()
+colors = get_atac_clust_colors()
 
-colnames(sc_tes_80) = c("end_chr","end_start","ends_stop","end_readID",
-                          "end_score","end_strand","combo_chr","combo_start",
-                          "combo_stop","combo_name","combo_score","combo_strand")
-colnames(sc_tes_80_ends) = c("end_chr","end_start","ends_stop","end_readID",
-                               "end_score","end_strand")
+DefaultAssay(mb_mt_atac)="ATAC"
+Idents(mb_mt_atac) = mb_mt_atac$final_clusters_ordered
+cluster.averages <- AverageExpression(mb_mt_atac, return.seurat = TRUE)
 
-sc_tes_80$end_id_nreads = sapply(strsplit(as.character(sc_tes_80$end_readID), "ccs_"), "[[", 2)
-sc_tes_80_ends$end_id_nreads = sapply(strsplit(as.character(sc_tes_80_ends$end_readID), "ccs_"), "[[", 2)
+mb_mt.atac.markers <- FindAllMarkers(mb_mt_atac, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.5)
+mb_mt.atac.markers = mb_mt.atac.markers[mb_mt.atac.markers$p_val_adj < 0.05,]
 
-tss_missing = sc_tes_80_ends$end_id_nreads[which((sc_tes_80_ends$end_id_nreads %in% sc_tes_80$end_id_nreads) == FALSE)]
-tss_missing = as.data.frame(tss_missing)
-tss_missing$gencode_TES = rep(0, length(tss_missing))
-tss_missing$polyA = rep(0, dim(tss_missing)[1])
+top10 <- mb_mt.atac.markers %>% group_by(cluster) %>% top_n(n = 50, wt = avg_logFC)
 
-sc_tes_80_smol = sc_tes_80[,c("end_id_nreads","combo_name")]
-sc_tes_80_table = dcast(sc_tes_80_smol,end_id_nreads~combo_name,fun.aggregate = function(x){as.integer(length(x) > 0)})
-colnames(tss_missing) = colnames(sc_tes_80_table)
-sc_tes_80_table = rbind(sc_tes_80_table, tss_missing)
-sc_tes_80_table$TSS = rep(1,dim(sc_tes_80_table)[1])
-
-fname = "figures/sc_tes_80pct_upset.pdf"
-pdf(file = fname,
-    width = 4.5,
-    height = 4)
-p = upset(
-  sc_tes_80_table,
-  nsets = 7,
-  nintersects = NA,
-  order.by = "freq",
-  line.size = 1.2,
-  point.size = 3.5,
-  text.scale = 1.5,
-  mb.ratio = c(0.5, 0.5),
-  main.bar.color = "#E69F00",
-  matrix.color="#E69F00"
-)
-p
-dev.off()
-p
-```
-    
-![png](figures/output_9_2_R.png)
-    
-
-
-### Panel S4I
-
-
-```R
-mb_mt_atac_tss = get_filt_tss_atac()
-
-DefaultAssay(mb_mt_atac_tss) <- 'TSS'
-
-tsss = c("chr1-135848863-135848863", #1
-         "chr1-135844786-135844983", #2
-         "chr1-135845345-135845602", #3
-         "chr1-135836334-135836427") #4
-
-fname = "figures/snatac_tnnt2_umaps.pdf"
-pdf(file = fname,
-    width = 9.6,
-    height = 2.5)
-p = FeaturePlot(
-  object = mb_mt_atac_tss,
-  features = tsss,
-  pt.size = 0.1,label = F,
-  max.cutoff = 'q95',
-  order=T, ncol = 2
-)  & NoAxes() & scale_colour_gradientn(colours = magma(21)) #& NoLegend() 
+fname="figures/atac_heatmap.pdf"
+pdf(file=fname,
+    width=7,height=12)
+p = DoHeatmap(cluster.averages, label=T,features = top10$gene, group.colors = colors, raster=F,draw.lines = FALSE) + scale_fill_viridis() 
 p
 dev.off()
 p
 ```
 
-![png](figures/output_11_2_R.png)
-    
+![png](figures/atac_heatmap.png)
 
-
-
-## Figures made in Python
-
-```python
-import pandas as pd
-import sys
-import os
-import scanpy as sc
-import seaborn as sns
-
-p = os.path.dirname(os.getcwd())
-sys.path.append(p)
-
-from scripts.utils import *
-from scripts.plotting import *
-```
-
-```python
-# read in the data relevant for this figure
-def get_sc_data():
-    fname = '../processing/talon/sc_talon_read_annot.tsv'
-    df = pd.read_csv(fname, sep='\t')    
-    return df
-
-def get_sc_tes_bed():
-    
-    fname = '../processing/ends/sc_tes.bed'
-    df = pd.read_csv(fname, sep='\t', header=None, usecols=[3,9])
-    df.columns = ['peak_id', 'read_name']
-    
-    return df
-
-def get_bulk_data():
-    fname = '../processing/talon/bulk_talon_read_annot.tsv'
-    df = pd.read_csv(fname, sep='\t')    
-    return df
-
-def get_bulk_tss_bed():
-    
-    fname = '../processing/ends/bulk_tss.bed'
-    df = pd.read_csv(fname, sep='\t', header=None, usecols=[3,9])
-    df.columns = ['peak_id', 'read_name']
-    return df
-
-def get_bulk_tes_bed():
-    
-    fname = '../processing/ends/bulk_tes.bed'
-    df = pd.read_csv(fname, sep='\t', header=None, usecols=[3,9])
-    df.columns = ['peak_id', 'read_name']
-    return df
-
-def get_tss_adata():
-    fname = '../processing/scanpy/sc_tss.h5ad'
-    adata = sc.read(fname)
-    
-    return adata
-```
-
-### Panel S4B
-
-
-```python
-df = get_bulk_data()
-tss = get_bulk_tss_bed()
-
-ylim = 13
-xlim = 15
-
-opref = 'figures/bulk_tss'
-
-plot_ends_iso(df, tss, opref, kind='tss', xlim=xlim, ylim=ylim)
-```
-
-
-    
-![png](figures/output_3_0.png)
-    
-
-
-### Panel S4D
-
-
-```python
-df = get_bulk_data()
-tes = get_bulk_tes_bed()
-
-ylim = 13
-xlim = 15
-
-opref = 'figures/bulk_tes'
-
-plot_ends_iso(df, tes, opref, kind='tes', xlim=xlim, ylim=ylim)
-```
-
-
-    
-![png](figures/output_5_0.png)
-    
-
-
-### Panel S4E
-
-
-```python
-df = get_sc_data()
-tes = get_sc_tes_bed()
-
-ylim = 11
-xlim = 5
-
-opref = 'figures/sc_tss'
-
-plot_ends_iso_cell(df, tes, opref, kind='tes', xlim=xlim, ylim=ylim)
-```
-
-
-    
-![png](figures/output_7_0.png)
-    
-
-
-### Panel S4H
-
-
-```python
-adata = get_tss_adata()
-opref = 'figures/tss'
-sns.set_context('paper', font_scale=2)
-
-tsss = adata.var.loc[adata.var.gene_name == 'Tnnt2'].index.unique().tolist()
-for tss in tsss:
-    sc.pl.umap(adata, color=tss, frameon=False, size=120, return_fig=True, color_map='magma')
-    ofig = '{}_{}_umap.pdf'.format(opref, tss)
-    plt.savefig(ofig, dpi=300, bbox_inches='tight')  
-```
-   
-![png](figures/output_9_1.png)
-    
-
-
-
-    
-![png](figures/output_9_2.png)
-    
-
-
-
-    
-![png](figures/output_9_3.png)
-    
-
-
-
-    
-![png](figures/output_9_4.png)
-    
-
-
-### Panel S4J
-
-
-```python
-for tss in tsss:
-    sc.pl.violin(adata, tss, groupby='leiden', jitter=0.4,
-        size = 4, show = False)
-    ofig = '{}_{}_leiden_violin.pdf'.format(opref, tss)
-    plt.savefig(ofig, dpi=300, bbox_inches='tight')
-```
-
-
-    
-![png](figures/output_11_1.png)
-    
-
-
-
-    
-![png](figures/output_11_2.png)
-    
-
-
-
-    
-![png](figures/output_11_3.png)
-    
-
-
-
-    
-![png](figures/output_11_4.png)
-    

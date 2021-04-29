@@ -223,7 +223,7 @@ p
     
 
 
-### Panel 3F
+<!-- ### Panel 3F
 
 
 ```R
@@ -258,5 +258,5 @@ p
 ```
   
 ![png](figures/output_12_3.png)
-    
+     -->
 

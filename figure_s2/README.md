@@ -276,6 +276,14 @@ p
 ```python
 import swan_vis as swan
 
+p = os.path.dirname(os.getcwd())
+sys.path.append(p)
+
+from scripts.utils import *
+from scripts.plotting import *
+```
+
+```python
 # output from Swan to get expression of transcript isoforms
 def get_swan_data():
     fname = '../processing/swan/sc_iso_swan.p'
