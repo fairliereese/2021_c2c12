@@ -5,6 +5,11 @@
 
 Panels A, B, D were output from the Splitpipe code
 
+#### For the long-Split-seq
+* Novel transcripts were filtered in TALON for those that appeared in more than one cell
+* GTFs of cells by cluster, novel transcript filter pass list, and TALON abundance file were used as input to [Swan](https://github.com/mortazavilab/swan_vis/tree/master/swan_vis)
+
+## Figures made in R
 
 ```R
 library(Seurat)
@@ -15,7 +20,6 @@ options(stringsAsFactors = FALSE)
 
 source('../scripts/plotting.R')
 ```
-
 
 ```R
 # unfiltered 40k cell dataset output from Seurat
@@ -166,7 +170,7 @@ p
     
 
 
-### Panel S2G
+### Panel S2H
 
 
 ```R
@@ -203,7 +207,7 @@ p
     
 
 
-### Panel S2H
+### Panel S2I
 
 
 ```R
@@ -238,32 +242,65 @@ p
     
 
 
-### Panel S2I
+% ### Panel S2I
 
 
-```R
-seurat_obj = get_40k_sc_data()
+% ```R
+% seurat_obj = get_40k_sc_data()
 
-Idents(seurat_obj) = seurat_obj@meta.data$final_clusters_ordered
-cluster.averages <- AverageExpression(seurat_obj, return.seurat = TRUE)
+% Idents(seurat_obj) = seurat_obj@meta.data$final_clusters_ordered
+% cluster.averages <- AverageExpression(seurat_obj, return.seurat = TRUE)
 
-seurat_obj.markers <- FindAllMarkers(seurat_obj, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.1)
-seurat_obj.markers = seurat_obj.markers[seurat_obj.markers$p_val_adj < 0.01,] # this is the same df as the marker table in the processing directory
+% seurat_obj.markers <- FindAllMarkers(seurat_obj, only.pos = TRUE, min.pct = 0.1, logfc.threshold = 0.1)
+% seurat_obj.markers = seurat_obj.markers[seurat_obj.markers$p_val_adj < 0.01,] # this is the same df as the marker table in the processing directory
 
-top10 <- seurat_obj.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
+% top10 <- seurat_obj.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
 
 
-fname = "figures/heatmap_20clusters_top10.pdf"
-pdf(file=fname,
-    width = 8, 
-    height = 9.5)
-p = DoHeatmap(cluster.averages, label=T,features = top10$gene, group.colors = colors, raster=F,draw.lines = FALSE) + 
-  scale_fill_viridis() + theme(axis.text.y = element_text(size = 6))
-p
-dev.off()
-p
-```
+% fname = "figures/heatmap_20clusters_top10.pdf"
+% pdf(file=fname,
+%     width = 8, 
+%     height = 9.5)
+% p = DoHeatmap(cluster.averages, label=T,features = top10$gene, group.colors = colors, raster=F,draw.lines = FALSE) + 
+%   scale_fill_viridis() + theme(axis.text.y = element_text(size = 6))
+% p
+% dev.off()
+% p
+% ```
 
-![png](figures/output_16_2.png)
+% ![png](figures/output_16_2.png)
     
 
+## Figures made in Python
+
+```python
+import swan_vis as swan
+
+# output from Swan to get expression of transcript isoforms
+def get_swan_data():
+    fname = '../processing/swan/sc_iso_swan.p'
+    sg = swan.SwanGraph(fname)
+    return sg
+```
+
+### Panel S2G
+
+```python
+sg = get_swan_data()
+
+gname = 'Tpm2'
+dataset_groups = [['Cluster_1', 'Cluster_2', 'Cluster_3'], 
+                 ['Cluster_4', 'Cluster_5'],
+                 ['Cluster_6', 'Cluster_7']]
+dataset_group_names = ['MB', 'Pax7Hi', 'MyogHi']
+
+sg.gen_report(gname, prefix='figures/{}'.format(gname),
+    heatmap=True, 
+    dataset_groups=dataset_groups,
+    dataset_group_names=dataset_group_names,
+    cmap='viridis', 
+    browser=True,
+    novelty=True)
+```
+
+![png](Tpm2_browser.png)

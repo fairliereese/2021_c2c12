@@ -1,4 +1,6 @@
 *tar.gz
 *pycache*
 processing/
+*.DS_Store*
+
 *ipynb_checkpoints*
