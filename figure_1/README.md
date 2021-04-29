@@ -8,7 +8,7 @@
 * Demultiplexed reads were filtered for those where the same combination of barcodes were also detected in the correspoding short-read experiment
 * Reads were mapped to the mm10 reference genome using Minimap2 (v2.17-r94) (-ax splice:hq -uf --MD)
 * Long-read sequencing artifacts were corrected with TranscriptClean (--canonOnly --primaryOnly)
-* Reads were annotated to their transcripts of origin using TALON (https://github.com/mortazavilab/TALON/tree/cb_tag) (--cb) and the GENCODE vM21 annotation. Each cell is its own dataset in the output TALON database.
+* Reads were annotated to their transcripts of origin using TALON (https://github.com/mortazavilab/TALON/tree/development) (--cb) and the GENCODE vM21 annotation. Each cell is its own dataset in the output TALON database.
 * NIC and NCC transcripts were filtered for those that were seen in 4 or more half-cells (as at this point the data is still represented by its barcode which could either be oligo dT primed or randomly primed)
 * Random hexamer and oligo dT cell halves were merged 
 * Scanpy was used to filter, create a UMAP, cluster, and normalize the single-cell data 
