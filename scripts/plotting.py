@@ -5,6 +5,7 @@ from matplotlib_venn import venn2
 from matplotlib.colors import ListedColormap
 import matplotlib as mpl
 import upsetplot
+from scipy import stats
 from .utils import *
 
 def adjust_lightness(color, amount=0.5):
@@ -292,18 +293,36 @@ def plot_short_long_det(df, c_dict, order, opref, \
                      joint_kws={'data':df, 's':40, 'alpha':1})
     ax = ax.ax_joint
     
-    # plot regression lines
+    # plot regression lines and equation of regression lines
     # https://stackoverflow.com/questions/48145924/different-colors-for-points-and-line-in-seaborn-regplot/68135585#68135585
+    # https://stackoverflow.com/questions/45902739/seaborn-annotate-the-linear-regression-equation
+    # https://stackoverflow.com/questions/62705904/add-entry-to-matplotlib-legend-without-plotting-an-object
+    lines = []
+    labels = []
     for s in df['sample'].unique().tolist():
         temp = df.loc[df['sample'] == s]
         color = c_dict[s]
         line_color = adjust_lightness(color, 0.5)
+        
+        # get coeffs of linear fit
+        slope, intercept, r_value, p_value, std_err = stats.linregress(temp[c1],temp[c2])
+
+#         # use line_kws to set line label for legend
+#         ax = sns.regplot(x="total_bill", y="tip", data=tips, color='b', 
+#          line_kws={'label':"y={0:.1f}x+{1:.1f}".format(slope,intercept)})
+    
+        lines += [mpl.lines.Line2D([0], [0], color=line_color)]
+        labels += ['m={0:.1f}'.format(slope)]
+
+        print('Slope of {} correlation: {}'.format(s, slope))
+        
         sns.regplot(data=temp, x=c1, y=c2,
                     scatter=False, ax=ax, color=color)
         sns.regplot(data=temp, x=c1, y=c2,
             scatter=False, ax=ax, color=color, ci=0,
             line_kws={'color':line_color,
-                      'linestyle':'-'})
+                      'linestyle':'-',
+                      'label':"m={0:.1f}".format(slope)})
 #     print(df.head())
 #     temp = df.loc[df['sample']=='MB_cells']
 #     sns.regplot(data=temp, x=c1, y=c2, scatter=False, ax=ax)
@@ -312,6 +331,7 @@ def plot_short_long_det(df, c_dict, order, opref, \
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.get_legend().remove()
+    plt.legend(lines, labels, loc='lower center')
 
     if how == 'gene':
         _ = ax.set(xlabel='# genes/cell in PacBio', ylabel='# genes/cell detected in Illumina')
