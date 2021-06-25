@@ -7,6 +7,16 @@ import matplotlib as mpl
 import upsetplot
 from .utils import *
 
+def adjust_lightness(color, amount=0.5):
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
+
 def get_talon_nov_colors():
     c_dict = {'Known': '#009E73',
               'ISM': '#0072B2',
@@ -275,12 +285,29 @@ def plot_short_long_det(df, c_dict, order, opref, \
     elif how == 'read':
         c1 = 'n_counts'
         c2 = 'ill_umi_count'
-        
+    
     ax = sns.jointplot(data=df, x=c1, y=c2,
                      hue='sample', palette=c_dict,
                      xlim=(0,xlim), ylim=(0,ylim), 
                      joint_kws={'data':df, 's':40, 'alpha':1})
     ax = ax.ax_joint
+    
+    # plot regression lines
+    # https://stackoverflow.com/questions/48145924/different-colors-for-points-and-line-in-seaborn-regplot/68135585#68135585
+    for s in df['sample'].unique().tolist():
+        temp = df.loc[df['sample'] == s]
+        color = c_dict[s]
+        line_color = adjust_lightness(color, 0.5)
+        sns.regplot(data=temp, x=c1, y=c2,
+                    scatter=False, ax=ax, color=color)
+        sns.regplot(data=temp, x=c1, y=c2,
+            scatter=False, ax=ax, color=color, ci=0,
+            line_kws={'color':line_color,
+                      'linestyle':'-'})
+#     print(df.head())
+#     temp = df.loc[df['sample']=='MB_cells']
+#     sns.regplot(data=temp, x=c1, y=c2, scatter=False, ax=ax)
+    
     ax.legend(title='')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
