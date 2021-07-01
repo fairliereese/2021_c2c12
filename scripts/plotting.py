@@ -306,11 +306,6 @@ def plot_short_long_det(df, c_dict, order, opref, \
         
         # get coeffs of linear fit
         slope, intercept, r_value, p_value, std_err = stats.linregress(temp[c1],temp[c2])
-
-#         # use line_kws to set line label for legend
-#         ax = sns.regplot(x="total_bill", y="tip", data=tips, color='b', 
-#          line_kws={'label':"y={0:.1f}x+{1:.1f}".format(slope,intercept)})
-    
         lines += [mpl.lines.Line2D([0], [0], color=line_color)]
         labels += ['m={0:.1f}'.format(slope)]
 
@@ -323,15 +318,11 @@ def plot_short_long_det(df, c_dict, order, opref, \
             line_kws={'color':line_color,
                       'linestyle':'-',
                       'label':"m={0:.1f}".format(slope)})
-#     print(df.head())
-#     temp = df.loc[df['sample']=='MB_cells']
-#     sns.regplot(data=temp, x=c1, y=c2, scatter=False, ax=ax)
     
     ax.legend(title='')
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.get_legend().remove()
-    plt.legend(lines, labels, loc='lower center')
 
     if how == 'gene':
         _ = ax.set(xlabel='# genes/cell in PacBio', ylabel='# genes/cell detected in Illumina')
