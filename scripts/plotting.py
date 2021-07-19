@@ -508,6 +508,63 @@ def plot_upset_plot(bulk, sc, opref, gtf=None, \
         
     return(df, df_copy)
 
+def plot_iso_complexity_vs_reads(adata, gene_adata, obs_col, xlim, ylim, c_dict, order, opref, how='iso'):
+    sns.set_context('paper', font_scale=2)
+    
+    # first format the data such that there's information about how 
+    # many genes have more than one iso/TSS/TES per gene
+    df = get_multiple_iso_genes(adata, gene_adata)
+
+    c1 = 'gene_n_counts'
+    c2 = 'n_genes_multiple_iso'
+
+    ax = sns.jointplot(data=df, x=c1, y=c2,
+                     hue=obs_col, palette=c_dict,
+#                      xlim=(-100,xlim), ylim=(-10,ylim), 
+                     marginal_kws={'common_norm':False},
+                     joint_kws={'data':df, 's':10, 'alpha':.5})
+    ax = ax.ax_joint
+    
+    lines = []
+    labels = []
+    for s in df[obs_col].unique().tolist():
+        temp = df.loc[df[obs_col] == s]
+        color = c_dict[s]
+        line_color = adjust_lightness(color, 0.5)
+
+        c1 = 'gene_n_counts'
+        c2 = 'n_genes_multiple_iso'
+
+        # get coeffs of linear fit
+        slope, intercept, r_value, p_value, std_err = stats.linregress(temp[c1],temp[c2])
+        lines += [mpl.lines.Line2D([0], [0], color=line_color)]
+        labels += ['m={0:.1f}'.format(slope)]
+
+        print('Slope of {} correlation: {}'.format(s, slope))
+
+        sns.regplot(data=temp, x=c1, y=c2,
+                    scatter=False, ax=ax, color=color)
+        sns.regplot(data=temp, x=c1, y=c2,
+            scatter=False, ax=ax, color=color, ci=0,
+            line_kws={'color':line_color,
+                      'linestyle':'-',
+                      'label':"m={0:.1f}".format(slope)})
+
+    ax.legend(title='')
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.get_legend().remove()
+
+    if how == 'iso':
+        _ = ax.set(xlabel='# reads/cell', ylabel='# Genes/cell with >1 isoform')
+    elif how == 'tss':
+        _ = ax.set(xlabel='# reads/cell', ylabel='# Genes/cell with >1 TSS')
+    elif how == 'tes':
+        _ = ax.set(xlabel='# reads/cell', ylabel='# Genes/cell with >1 TES')
+       
+    fname = '{}_{}_n_{}_genes_read_depth.pdf'.format(opref, obs_col, how)
+    plt.savefig(fname, dpi=300, bbox_inches='tight')
+
 def plot_ends_iso_cell(df, tss_df, opref, kind='tss', xlim=None, ylim=None):
     sns.set_context("paper", font_scale=1.6)
     

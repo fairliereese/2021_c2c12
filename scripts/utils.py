@@ -80,7 +80,40 @@ def get_sample_df(datasets):
     sample_df.loc[sample_df.experiment == 'bulk', 'tech'] = 'Bulk'
     
     return sample_df
+
+def calc_detection_stats(bulk, sc, novelty):
+    bulk_datasets = get_dataset_names(bulk)
+    sc_datasets = get_dataset_names(sc)
     
+
+    bulk['dataset_sum'] = bulk[bulk_datasets].sum(axis=1)
+    sc['dataset_sum'] = sc[sc_datasets].sum(axis=1)
+    
+
+    # get rid of unexpressed
+    bulk = bulk.loc[bulk.dataset_sum > 0]
+    sc = sc.loc[sc.dataset_sum > 0]
+
+    # only novelty types we care about
+    bulk = bulk.loc[bulk.transcript_novelty.isin(novelty)]
+    sc = sc.loc[sc.transcript_novelty.isin(novelty)]
+    
+    # sensitivity - true positives / total positives 
+    # (all bulk-detected transcripts)
+    pos = len(bulk.index)
+    true_pos = len(list(set(bulk.transcript_ID.tolist())&set(sc.transcript_ID.tolist())))
+    sens = true_pos/pos
+    print('Sensitivity')
+    print(sens)
+    
+    # false positive rate - number of transcripts uniquely detected in 
+    # sc / number of transcripts detected in sc + bulk
+    false_pos = len(list(set(sc.transcript_ID.tolist())-set(bulk.transcript_ID.tolist())))
+    total_sc = len(sc.index)
+    fpr = false_pos/total_sc
+    print('False positive rate')
+    print(fpr)
+ 
 def add_read_annot_metadata(df, bulk=False):
     i_df = get_illumina_metadata()
     df = df.merge(i_df, how='left', left_on='dataset', right_on='raw_bc')
@@ -153,6 +186,75 @@ def get_gtf_info(fname, kind='gene'):
     df.drop('fields', axis=1, inplace=True)
         
     return df    
+
+def get_multiple_iso_genes(adata, gene_adata):
+    # create a df
+#     X = adata.raw.X
+    X = adata.X
+
+    columns = adata.var.index.tolist()
+    ind = adata.obs.merged_bc.tolist()
+
+    df = pd.DataFrame(data=X, columns=columns, index=ind)
+
+    # merge in celltype info 
+    celltype_map = {'1': 'MB', '2': 'MB', '3': 'MB', \
+                    '4': 'MNC', '5': 'MNC', \
+                    '6': 'MT', '7': 'MT'}
+    gene_adata.obs['celltype'] = gene_adata.obs.leiden.map(celltype_map)
+    gene_adata.obs['gene_leiden'] = gene_adata.obs.leiden
+    gene_adata.obs['gene_n_counts'] = gene_adata.obs.n_counts
+    filt_bcs = gene_adata.obs.merged_bc.tolist()
+    adata = adata[adata.obs.merged_bc.isin(filt_bcs), :]
+    adata.obs = adata.obs.merge(gene_adata.obs[['merged_bc', 'celltype', 'gene_leiden', 'gene_n_counts']], \
+                                how='left', on='merged_bc')
+
+    df = df.transpose()
+
+    # drop all unexpressed isoforms
+    df = df.loc[df.any(axis=1)]
+
+    # merge in with gene info
+    df = df.merge(adata.var[['gene_name']], how='left', \
+                  left_index=True, right_index=True)
+
+    # only keep genes that have more than one expressed isoform across our dataset
+    df = df.loc[df.duplicated(subset='gene_name', keep=False)]
+
+    # also only keep known genes
+    df = df.loc[~df.gene_name.str.contains('ENCODEM')]
+
+    # apply a boolean mask so we can just sum up when grouping by gene 
+    # to determine the number of expressed isos / cell 
+    df.reset_index(inplace=True, drop=True)
+    df.set_index('gene_name', inplace=True)
+    df = df.astype(bool).astype(int)
+
+    # group on gene and sum to get the number of isoforms expressed 
+    # per gene per cell
+    df.reset_index(inplace=True)
+    df = df.groupby(by='gene_name').sum().reset_index()
+
+    # set a boolean mask to identify genes that have more than one expressed
+    # isoform per gene per cell
+    df.set_index('gene_name', inplace=True)
+    df = (df > 1).astype(int)
+    df = df.transpose()
+
+    # sum up for each cell to get the total number of genes that express more than 
+    # one isoform per cell 
+    df.columns = df.columns.astype(str)
+    df['n_genes_multiple_iso'] = df.sum(axis=1)
+    df = df['n_genes_multiple_iso'].to_frame()
+
+    # merge in celltype and number of reads data
+    df = df.merge(adata.obs,\
+                  how='left', left_index=True, right_on='merged_bc')
+
+    # fine I'll filter one more time
+    df = df.loc[df.merged_bc.isin(gene_adata.obs.merged_bc.tolist())]
+
+    return df
 
 def make_counts_table(bulk, sc, sample_df, \
                       gtf, kind='gene', novelty='Known'):
