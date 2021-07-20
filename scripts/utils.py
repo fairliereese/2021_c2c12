@@ -1,4 +1,6 @@
+import scipy.stats as st
 import pandas as pd
+
 
 # related to processing splitseq
 
@@ -80,6 +82,14 @@ def get_sample_df(datasets):
     sample_df.loc[sample_df.experiment == 'bulk', 'tech'] = 'Bulk'
     
     return sample_df
+
+def calc_iso_complex_sig(df, obs_col, cond1, cond2):
+    dist1 = df.loc[df[obs_col] == cond1, 'n_genes_multiple_iso'].tolist()
+    dist2 = df.loc[df[obs_col] == cond2, 'n_genes_multiple_iso'].tolist()
+
+    stat, pval = st.mannwhitneyu(dist1, dist2)
+    print('Mann Whitney U statistic: {}'.format(stat))
+    print('P value: {}'.format(pval))
 
 def calc_detection_stats(bulk, sc, novelty):
     bulk_datasets = get_dataset_names(bulk)

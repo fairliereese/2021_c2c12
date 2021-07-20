@@ -520,7 +520,7 @@ def plot_iso_complexity_vs_reads(adata, gene_adata, obs_col, xlim, ylim, c_dict,
 
     ax = sns.jointplot(data=df, x=c1, y=c2,
                      hue=obs_col, palette=c_dict,
-#                      xlim=(-100,xlim), ylim=(-10,ylim), 
+                     xlim=(-100,xlim), ylim=(-10,ylim), 
                      marginal_kws={'common_norm':False},
                      joint_kws={'data':df, 's':10, 'alpha':.5})
     ax = ax.ax_joint
@@ -564,6 +564,8 @@ def plot_iso_complexity_vs_reads(adata, gene_adata, obs_col, xlim, ylim, c_dict,
        
     fname = '{}_{}_n_{}_genes_read_depth.pdf'.format(opref, obs_col, how)
     plt.savefig(fname, dpi=300, bbox_inches='tight')
+    
+    return df
 
 def plot_ends_iso_cell(df, tss_df, opref, kind='tss', xlim=None, ylim=None):
     sns.set_context("paper", font_scale=1.6)
